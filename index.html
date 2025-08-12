@@ -138,7 +138,7 @@
 </div>
 
 <script>
-    const correctPassword = "YourSecret123";
+    const correctPassword = "12345";
     const redirectURL = "https://example.com";
 
     function checkPassword() {
@@ -156,39 +156,105 @@
         passwordField.type = passwordField.type === "password" ? "text" : "password";
     }
 
-    // Matrix animation background
-    const canvas = document.getElementById("particles");
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>Lightning Password Field</title>
+    <style>
+        body {
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            position: relative;
+        }
+
+        input[type="password"] {
+            padding: 10px 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            z-index: 2;
+            position: relative;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <canvas id="lightning"></canvas>
+    <input type="password" placeholder="Enter Password" id="password">
+</div>
+
+<script>
+    const canvas = document.getElementById("lightning");
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const input = document.getElementById("password");
 
-    const chars = "01 Robotics AI Code Future Tech Cyber";
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
+    let width = 300, height = 60;
+    canvas.width = width;
+    canvas.height = height;
 
-    function draw() {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#00ff99";
-        ctx.font = fontSize + "px monospace";
-        for (let i = 0; i < drops.length; i++) {
-            const text = chars[Math.floor(Math.random() * chars.length)];
-            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                drops[i] = 0;
+    const containerRect = input.getBoundingClientRect();
+
+    function drawLightning() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = "rgba(0, 255, 255, 0.8)";
+        ctx.lineWidth = 2;
+
+        for (let i = 0; i < 3; i++) {
+            let x = 0;
+            let y = Math.random() * height;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            for (let j = 0; j < 10; j++) {
+                x += width / 10;
+                y += (Math.random() - 0.5) * 20;
+                ctx.lineTo(x, y);
             }
-            drops[i]++;
+            ctx.stroke();
         }
     }
-    setInterval(draw, 33);
 
-    window.addEventListener("resize", () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    let lightningInterval = null;
+
+    document.addEventListener("mousemove", (e) => {
+        const rect = input.getBoundingClientRect();
+        const distX = Math.abs(e.clientX - (rect.left + rect.width / 2));
+        const distY = Math.abs(e.clientY - (rect.top + rect.height / 2));
+        const distance = Math.sqrt(distX * distX + distY * distY);
+
+        if (distance < 100) { 
+            if (!lightningInterval) {
+                lightningInterval = setInterval(drawLightning, 100);
+            }
+        } else {
+            clearInterval(lightningInterval);
+            lightningInterval = null;
+            ctx.clearRect(0, 0, width, height);
+        }
     });
 </script>
 
 </body>
 </html>
+
 
