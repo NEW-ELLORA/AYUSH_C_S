@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,25 +8,40 @@
     body {
         margin: 0;
         height: 100vh;
-        background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center center/cover;
+        background: #000;
         font-family: 'Poppins', sans-serif;
         overflow: hidden;
     }
 
-    canvas {
+    /* Futuristic code & tech background */
+    body::before {
+        content: "";
         position: fixed;
         top: 0;
         left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('https://images.unsplash.com/photo-1518770660439-4636190af475')
+            no-repeat center center/cover;
+        filter: brightness(0.4) blur(2px);
         z-index: 0;
+    }
+
+    /* Animated matrix-style code overlay */
+    canvas#particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1;
     }
 
     .login-box {
         position: relative;
-        z-index: 1;
-        background: rgba(255, 255, 255, 0.08);
+        z-index: 2;
+        background: rgba(0, 0, 0, 0.5);
         padding: 40px;
         border-radius: 20px;
-        box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 30px rgba(0, 255, 200, 0.6);
         text-align: center;
         width: 320px;
         backdrop-filter: blur(15px);
@@ -37,12 +52,12 @@
     }
 
     .login-box h2 {
-        color: white;
+        color: #00f5d4;
         margin-bottom: 20px;
         letter-spacing: 1px;
         white-space: nowrap;
         overflow: hidden;
-        border-right: 3px solid white;
+        border-right: 3px solid #00f5d4;
         width: 0;
     }
 
@@ -78,7 +93,7 @@
 
     button:hover {
         transform: scale(1.05);
-        box-shadow: 0 0 20px rgba(0, 255, 200, 0.6);
+        box-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
     }
 
     @keyframes fadeIn {
@@ -122,66 +137,47 @@
             index++;
             setTimeout(typeWriter, 100);
         } else {
-            typewriterElement.style.borderRight = "none"; // Remove cursor after typing
+            typewriterElement.style.borderRight = "none";
         }
     }
     window.onload = typeWriter;
 
-    // PARTICLE BACKGROUND
+    // MATRIX-STYLE PARTICLE BACKGROUND
     const canvas = document.getElementById("particles");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const particlesArray = [];
-    const particleCount = 80;
+    const chars = "01 Robotics AI Code Future Tech Cyber";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
 
-    class Particle {
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.size = Math.random() * 3 + 1;
-            this.speedX = Math.random() * 1 - 0.5;
-            this.speedY = Math.random() * 1 - 0.5;
-        }
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-            if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-        }
-        draw() {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.fill();
+    function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#00ff99";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
         }
     }
 
-    function init() {
-        for (let i = 0; i < particleCount; i++) {
-            particlesArray.push(new Particle());
-        }
-    }
-
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particlesArray.forEach(p => {
-            p.update();
-            p.draw();
-        });
-        requestAnimationFrame(animate);
-    }
+    setInterval(draw, 33);
 
     window.addEventListener("resize", () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     });
-
-    init();
-    animate();
 </script>
 
 </body>
 </html>
+
