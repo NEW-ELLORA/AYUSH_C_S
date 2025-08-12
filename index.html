@@ -1,33 +1,45 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secure Login - Tech Theme</title>
+<title>Secure Login</title>
 <style>
     body {
         margin: 0;
         height: 100vh;
-        background: radial-gradient(circle at center, #001f33 0%, #000000 100%);
+        background: #000;
         font-family: 'Poppins', sans-serif;
         overflow: hidden;
     }
 
-    /* Animated glowing lines background */
-    canvas#circuit {
+    body::before {
+        content: "";
         position: fixed;
         top: 0;
         left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('https://images.unsplash.com/photo-1518770660439-4636190af475')
+            no-repeat center center/cover;
+        filter: brightness(0.4) blur(2px);
         z-index: 0;
+    }
+
+    canvas#particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1;
     }
 
     .login-box {
         position: relative;
-        z-index: 1;
+        z-index: 2;
         background: rgba(0, 0, 0, 0.5);
         padding: 40px;
         border-radius: 20px;
-        box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        box-shadow: 0 0 30px rgba(0, 255, 200, 0.6);
         text-align: center;
         width: 320px;
         backdrop-filter: blur(15px);
@@ -38,18 +50,24 @@
     }
 
     .login-box h2 {
-        color: #00fff7;
+        color: #00f5d4;
         margin-bottom: 20px;
         letter-spacing: 1px;
         white-space: nowrap;
         overflow: hidden;
-        border-right: 3px solid #00fff7;
+        border-right: 3px solid #00f5d4;
         width: 0;
     }
 
-    input[type="password"] {
+    .input-container {
+        position: relative;
+        margin-top: 20px;
+    }
+
+    input[type="password"],
+    input[type="text"] {
         width: 100%;
-        padding: 12px;
+        padding: 12px 40px 12px 12px;
         border: none;
         border-radius: 8px;
         outline: none;
@@ -62,6 +80,16 @@
 
     input::placeholder {
         color: rgba(255, 255, 255, 0.6);
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: white;
+        font-size: 18px;
     }
 
     button {
@@ -90,33 +118,42 @@
 </head>
 <body>
 
-<canvas id="circuit"></canvas>
+<audio id="errorSound" src="error.mp3" preload="auto"></audio>
+
+<canvas id="particles"></canvas>
 
 <div class="login-box">
     <h2 id="typewriter"></h2>
-    <input type="password" id="password" placeholder="Password">
+    <div style="height: 20px;"></div>
+    <div class="input-container">
+        <input type="password" id="password" placeholder="Password">
+        <span class="toggle-password" onclick="togglePassword()">👁</span>
+    </div>
     <button onclick="checkPassword()">Login</button>
 </div>
 
 <script>
-    // PASSWORD PROTECTION
-    const correctPassword = "YourSecret123"; // Change password here
-    const redirectURL = "https://example.com"; // Change website here
+    const correctPassword = "YourSecret123"; 
+    const redirectURL = "https://example.com"; 
 
     function checkPassword() {
         const enteredPassword = document.getElementById("password").value;
         if (enteredPassword === correctPassword) {
             window.location.href = redirectURL;
         } else {
+            document.getElementById("errorSound").play();
             alert("Incorrect Password ❌");
         }
     }
 
-    // TYPEWRITER EFFECT
+    function togglePassword() {
+        const passwordField = document.getElementById("password");
+        passwordField.type = passwordField.type === "password" ? "text" : "password";
+    }
+
     const text = "Enter Password";
     const typewriterElement = document.getElementById("typewriter");
     let index = 0;
-
     function typeWriter() {
         if (index < text.length) {
             typewriterElement.innerHTML += text.charAt(index);
@@ -128,34 +165,31 @@
     }
     window.onload = typeWriter;
 
-    // FUTURISTIC CIRCUIT ANIMATION
-    const canvas = document.getElementById("circuit");
+    const canvas = document.getElementById("particles");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    function drawCircuit() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const chars = "01 Robotics AI Code Future Tech Cyber";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
 
-        for (let i = 0; i < 50; i++) {
-            ctx.strokeStyle = `hsla(${(i * 10) % 360}, 100%, 50%, 0.6)`;
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            let x = Math.random() * canvas.width;
-            let y = Math.random() * canvas.height;
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + Math.random() * 50, y);
-            ctx.lineTo(x + Math.random() * 50, y + Math.random() * 50);
-            ctx.stroke();
+    function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#00ff99";
+        ctx.font = fontSize + "px monospace";
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
         }
     }
-
-    function animateCircuit() {
-        drawCircuit();
-        requestAnimationFrame(animateCircuit);
-    }
-
-    animateCircuit();
+    setInterval(draw, 33);
 
     window.addEventListener("resize", () => {
         canvas.width = window.innerWidth;
