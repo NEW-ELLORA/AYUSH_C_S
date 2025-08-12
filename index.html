@@ -13,7 +13,6 @@
         overflow: hidden;
     }
 
-    /* Matrix/tech background overlay */
     canvas#particles {
         position: fixed;
         top: 0;
@@ -21,7 +20,6 @@
         z-index: 0;
     }
 
-    /* Login box with neon glow */
     .login-box {
         position: relative;
         z-index: 2;
@@ -38,7 +36,6 @@
         transform: translateY(-50%);
     }
 
-    /* Shark-effect text */
     .shark-text {
         font-size: 1.5em;
         font-weight: bold;
@@ -68,20 +65,29 @@
     .input-container {
         position: relative;
         margin-top: 10px;
+        display: flex;
+        justify-content: center;
     }
 
+    .password-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Password field style */
     input[type="password"],
     input[type="text"] {
-        width: 100%;
+        width: 80%;
         padding: 12px 40px 12px 12px;
         border: none;
         border-radius: 8px;
         outline: none;
         font-size: 16px;
-        margin-bottom: 15px;
         background: rgba(255, 255, 255, 0.12);
         color: white;
         text-align: center;
+        z-index: 2;
+        position: relative;
     }
 
     input::placeholder {
@@ -96,10 +102,20 @@
         cursor: pointer;
         color: white;
         font-size: 18px;
+        z-index: 3;
+    }
+
+    /* Lightning canvas overlay */
+    #lightning {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 1;
     }
 
     button {
-        width: 100%;
+        width: 80%;
         padding: 12px;
         border: none;
         border-radius: 8px;
@@ -109,6 +125,7 @@
         font-weight: bold;
         cursor: pointer;
         transition: 0.3s;
+        margin-top: 10px;
     }
 
     button:hover {
@@ -131,8 +148,11 @@
 <div class="login-box">
     <div class="shark-text">Enter Password</div>
     <div class="input-container">
-        <input type="password" id="password" placeholder="Password">
-        <span class="toggle-password" onclick="togglePassword()">👁</span>
+        <div class="password-wrapper">
+            <canvas id="lightning"></canvas>
+            <input type="password" id="password" placeholder="Password">
+            <span class="toggle-password" onclick="togglePassword()">👁</span>
+        </div>
     </div>
     <button onclick="checkPassword()">Login</button>
 </div>
@@ -156,77 +176,33 @@
         passwordField.type = passwordField.type === "password" ? "text" : "password";
     }
 
-    <!DOCTYPE html>
-<html>
-<head>
-    <title>Lightning Password Field</title>
-    <style>
-        body {
-            background: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            color: white;
-            font-family: Arial, sans-serif;
-        }
-
-        .container {
-            position: relative;
-        }
-
-        input[type="password"] {
-            padding: 10px 15px;
-            font-size: 18px;
-            border: none;
-            border-radius: 8px;
-            outline: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            z-index: 2;
-            position: relative;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 1;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <canvas id="lightning"></canvas>
-    <input type="password" placeholder="Enter Password" id="password">
-</div>
-
-<script>
+    // Lightning effect script
     const canvas = document.getElementById("lightning");
     const ctx = canvas.getContext("2d");
     const input = document.getElementById("password");
 
-    let width = 300, height = 60;
-    canvas.width = width;
-    canvas.height = height;
+    function resizeCanvas() {
+        const rect = input.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        canvas.style.width = rect.width + "px";
+        canvas.style.height = rect.height + "px";
+    }
 
-    const containerRect = input.getBoundingClientRect();
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
 
     function drawLightning() {
-        ctx.clearRect(0, 0, width, height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = "rgba(0, 255, 255, 0.8)";
         ctx.lineWidth = 2;
-
         for (let i = 0; i < 3; i++) {
             let x = 0;
-            let y = Math.random() * height;
+            let y = Math.random() * canvas.height;
             ctx.beginPath();
             ctx.moveTo(x, y);
             for (let j = 0; j < 10; j++) {
-                x += width / 10;
+                x += canvas.width / 10;
                 y += (Math.random() - 0.5) * 20;
                 ctx.lineTo(x, y);
             }
@@ -242,14 +218,14 @@
         const distY = Math.abs(e.clientY - (rect.top + rect.height / 2));
         const distance = Math.sqrt(distX * distX + distY * distY);
 
-        if (distance < 100) { 
+        if (distance < 100) {
             if (!lightningInterval) {
                 lightningInterval = setInterval(drawLightning, 100);
             }
         } else {
             clearInterval(lightningInterval);
             lightningInterval = null;
-            ctx.clearRect(0, 0, width, height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     });
 </script>
