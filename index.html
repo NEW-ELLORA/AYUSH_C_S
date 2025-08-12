@@ -1,47 +1,33 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secure Login</title>
+<title>Secure Login - Tech Theme</title>
 <style>
     body {
         margin: 0;
         height: 100vh;
-        background: #000;
+        background: radial-gradient(circle at center, #001f33 0%, #000000 100%);
         font-family: 'Poppins', sans-serif;
         overflow: hidden;
     }
 
-    /* Futuristic code & tech background */
-    body::before {
-        content: "";
+    /* Animated glowing lines background */
+    canvas#circuit {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('https://images.unsplash.com/photo-1518770660439-4636190af475')
-            no-repeat center center/cover;
-        filter: brightness(0.4) blur(2px);
         z-index: 0;
-    }
-
-    /* Animated matrix-style code overlay */
-    canvas#particles {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 1;
     }
 
     .login-box {
         position: relative;
-        z-index: 2;
+        z-index: 1;
         background: rgba(0, 0, 0, 0.5);
         padding: 40px;
         border-radius: 20px;
-        box-shadow: 0 0 30px rgba(0, 255, 200, 0.6);
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
         text-align: center;
         width: 320px;
         backdrop-filter: blur(15px);
@@ -52,12 +38,12 @@
     }
 
     .login-box h2 {
-        color: #00f5d4;
+        color: #00fff7;
         margin-bottom: 20px;
         letter-spacing: 1px;
         white-space: nowrap;
         overflow: hidden;
-        border-right: 3px solid #00f5d4;
+        border-right: 3px solid #00fff7;
         width: 0;
     }
 
@@ -104,7 +90,7 @@
 </head>
 <body>
 
-<canvas id="particles"></canvas>
+<canvas id="circuit"></canvas>
 
 <div class="login-box">
     <h2 id="typewriter"></h2>
@@ -142,35 +128,34 @@
     }
     window.onload = typeWriter;
 
-    // MATRIX-STYLE PARTICLE BACKGROUND
-    const canvas = document.getElementById("particles");
+    // FUTURISTIC CIRCUIT ANIMATION
+    const canvas = document.getElementById("circuit");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const chars = "01 Robotics AI Code Future Tech Cyber";
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
+    function drawCircuit() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function draw() {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#00ff99";
-        ctx.font = fontSize + "px monospace";
-
-        for (let i = 0; i < drops.length; i++) {
-            const text = chars[Math.floor(Math.random() * chars.length)];
-            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                drops[i] = 0;
-            }
-            drops[i]++;
+        for (let i = 0; i < 50; i++) {
+            ctx.strokeStyle = `hsla(${(i * 10) % 360}, 100%, 50%, 0.6)`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + Math.random() * 50, y);
+            ctx.lineTo(x + Math.random() * 50, y + Math.random() * 50);
+            ctx.stroke();
         }
     }
 
-    setInterval(draw, 33);
+    function animateCircuit() {
+        drawCircuit();
+        requestAnimationFrame(animateCircuit);
+    }
+
+    animateCircuit();
 
     window.addEventListener("resize", () => {
         canvas.width = window.innerWidth;
@@ -180,4 +165,5 @@
 
 </body>
 </html>
+
 
