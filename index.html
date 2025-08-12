@@ -13,6 +13,7 @@
         overflow: hidden;
     }
 
+    /* Particle background canvas */
     canvas#particles {
         position: fixed;
         top: 0;
@@ -20,6 +21,7 @@
         z-index: 0;
     }
 
+    /* Login box styling */
     .login-box {
         position: relative;
         z-index: 2;
@@ -36,6 +38,7 @@
         transform: translateY(-50%);
     }
 
+    /* Shark-text (Enter Password) */
     .shark-text {
         font-size: 1.5em;
         font-weight: bold;
@@ -62,6 +65,7 @@
         100% { left: 100%; }
     }
 
+    /* Password field styling */
     .input-container {
         position: relative;
         margin-top: 10px;
@@ -74,8 +78,7 @@
         display: inline-block;
     }
 
-    input[type="password"],
-    input[type="text"] {
+    input[type="password"], input[type="text"] {
         width: 80%;
         padding: 12px 40px 12px 12px;
         border: none;
@@ -104,13 +107,14 @@
         z-index: 3;
     }
 
-    /* Lightning canvas overlay on text */
+    /* Lightning canvas overlay (on text only) */
     #lightning {
         position: absolute;
         top: 0;
-        left: 0;
+        left: 50%;
+        transform: translateX(-50%);
         pointer-events: none;
-        z-index: 3;
+        z-index: 1;
     }
 
     button {
@@ -177,17 +181,15 @@
         passwordField.type = passwordField.type === "password" ? "text" : "password";
     }
 
-    // Lightning effect script
+    /* Lightning effect on text */
     const canvas = document.getElementById("lightning");
     const ctx = canvas.getContext("2d");
-    const sharkText = document.getElementById("sharkText");
+    const textElem = document.getElementById("sharkText");
 
     function resizeCanvas() {
-        const rect = sharkText.getBoundingClientRect();
+        const rect = textElem.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
-        canvas.style.width = rect.width + "px";
-        canvas.style.height = rect.height + "px";
     }
 
     resizeCanvas();
@@ -204,7 +206,7 @@
             ctx.moveTo(x, y);
             for (let j = 0; j < 10; j++) {
                 x += canvas.width / 10;
-                y += (Math.random() - 0.5) * 10;
+                y += (Math.random() - 0.5) * 20;
                 ctx.lineTo(x, y);
             }
             ctx.stroke();
@@ -214,7 +216,7 @@
     let lightningInterval = null;
 
     document.addEventListener("mousemove", (e) => {
-        const rect = sharkText.getBoundingClientRect();
+        const rect = textElem.getBoundingClientRect();
         const distX = Math.abs(e.clientX - (rect.left + rect.width / 2));
         const distY = Math.abs(e.clientY - (rect.top + rect.height / 2));
         const distance = Math.sqrt(distX * distX + distY * distY);
@@ -229,6 +231,47 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     });
+
+    /* Particle background animation */
+    const pCanvas = document.getElementById("particles");
+    const pCtx = pCanvas.getContext("2d");
+    let particlesArray;
+
+    function initParticles() {
+        pCanvas.width = window.innerWidth;
+        pCanvas.height = window.innerHeight;
+        particlesArray = [];
+        for (let i = 0; i < 100; i++) {
+            particlesArray.push({
+                x: Math.random() * pCanvas.width,
+                y: Math.random() * pCanvas.height,
+                size: Math.random() * 3 + 1,
+                speedX: (Math.random() - 0.5) * 2,
+                speedY: (Math.random() - 0.5) * 2
+            });
+        }
+    }
+
+    function animateParticles() {
+        pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+        particlesArray.forEach(p => {
+            p.x += p.speedX;
+            p.y += p.speedY;
+
+            if (p.x < 0 || p.x > pCanvas.width) p.speedX *= -1;
+            if (p.y < 0 || p.y > pCanvas.height) p.speedY *= -1;
+
+            pCtx.fillStyle = "rgba(0,255,200,0.7)";
+            pCtx.beginPath();
+            pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            pCtx.fill();
+        });
+        requestAnimationFrame(animateParticles);
+    }
+
+    window.addEventListener("resize", initParticles);
+    initParticles();
+    animateParticles();
 </script>
 
 </body>
