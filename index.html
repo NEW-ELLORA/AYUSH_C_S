@@ -3,234 +3,124 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secure Login</title>
+<title>Lightning Login</title>
 <style>
     body {
         margin: 0;
         height: 100vh;
-        background: #000;
-        font-family: 'Poppins', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #1e1e2f, #252547, #1b1b2a);
+        background-size: 400% 400%;
+        animation: backgroundMove 10s infinite alternate ease-in-out;
+        font-family: Arial, sans-serif;
         overflow: hidden;
     }
 
-    canvas#particles {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 0;
+    @keyframes backgroundMove {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
     }
 
     .login-box {
         position: relative;
-        z-index: 2;
-        background: rgba(0, 0, 0, 0.6);
-        padding: 25px;
-        border-radius: 16px;
-        box-shadow: 0 0 40px rgba(0, 255, 200, 0.8), inset 0 0 20px rgba(0, 255, 200, 0.2);
+        padding: 40px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.4);
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 300px;
+    }
+
+    .login-box h2 {
+        color: white;
         text-align: center;
-        width: 320px;
-        backdrop-filter: blur(15px);
-        animation: fadeIn 1.2s ease-in-out;
-        margin: auto;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .shark-text {
-        font-size: 1.5em;
-        font-weight: bold;
-        color: #00f5d4;
-        margin-bottom: 15px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .shark-text::after {
-        content: '';
-        position: absolute;
-        left: -50%;
-        top: 0;
-        width: 50%;
-        height: 100%;
-        background: linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent);
-        animation: sharkMove 2s infinite;
-    }
-
-    @keyframes sharkMove {
-        0% { left: -50%; }
-        50% { left: 100%; }
-        100% { left: 100%; }
+        margin-bottom: 20px;
     }
 
     .input-container {
         position: relative;
-        margin-top: 10px;
-        display: flex;
-        justify-content: center;
     }
 
-    .password-wrapper {
-        position: relative;
-        display: inline-block;
-    }
-
-    /* Password field style */
-    input[type="password"],
-    input[type="text"] {
-        width: 80%;
-        padding: 12px 40px 12px 12px;
+    input {
+        width: 100%;
+        padding: 12px;
         border: none;
-        border-radius: 8px;
-        outline: none;
+        border-radius: 6px;
         font-size: 16px;
-        background: rgba(255, 255, 255, 0.12);
+        outline: none;
+        background: rgba(255,255,255,0.1);
         color: white;
-        text-align: center;
-        z-index: 2;
-        position: relative;
     }
 
     input::placeholder {
-        color: rgba(255, 255, 255, 0.6);
+        color: rgba(255,255,255,0.6);
     }
 
-    .toggle-password {
+    /* Lightning text effect */
+    .lightning-text {
         position: absolute;
-        right: 10px;
         top: 50%;
+        left: 12px;
         transform: translateY(-50%);
-        cursor: pointer;
-        color: white;
-        font-size: 18px;
-        z-index: 3;
+        pointer-events: none;
+        font-size: 16px;
+        font-weight: bold;
+        background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: lightningMove 1.5s infinite linear;
     }
 
-    /* Lightning canvas overlay */
-    #lightning {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 1;
+    @keyframes lightningMove {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
     }
 
     button {
-        width: 80%;
         padding: 12px;
+        background: #00bcd4;
         border: none;
-        border-radius: 8px;
-        background: linear-gradient(90deg, #00f5d4, #00bbf9, #9b5de5);
-        color: white;
+        border-radius: 6px;
         font-size: 16px;
-        font-weight: bold;
         cursor: pointer;
         transition: 0.3s;
-        margin-top: 10px;
     }
 
     button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
-    }
-
-    @keyframes fadeIn {
-        from {opacity: 0; transform: translateY(-20px);}
-        to {opacity: 1; transform: translateY(0);}
+        background: #0097a7;
     }
 </style>
 </head>
 <body>
 
-<audio id="errorSound" src="error.mp3" preload="auto"></audio>
-
-<canvas id="particles"></canvas>
-
 <div class="login-box">
-    <div class="shark-text">Enter Password</div>
+    <h2>Login</h2>
     <div class="input-container">
-        <div class="password-wrapper">
-            <canvas id="lightning"></canvas>
-            <input type="password" id="password" placeholder="Password">
-            <span class="toggle-password" onclick="togglePassword()">👁</span>
-        </div>
+        <input type="text" placeholder="Username">
     </div>
-    <button onclick="checkPassword()">Login</button>
+    <div class="input-container">
+        <input type="password" id="password">
+        <span class="lightning-text">Enter Password</span>
+    </div>
+    <button>Login</button>
 </div>
 
 <script>
-    const correctPassword = "12345";
-    const redirectURL = "https://example.com";
+    const passwordInput = document.getElementById("password");
+    const lightningText = document.querySelector(".lightning-text");
 
-    function checkPassword() {
-        const enteredPassword = document.getElementById("password").value;
-        if (enteredPassword === correctPassword) {
-            window.location.href = redirectURL;
-        } else {
-            document.getElementById("errorSound").play();
-            alert("Incorrect Password ❌");
-        }
-    }
-
-    function togglePassword() {
-        const passwordField = document.getElementById("password");
-        passwordField.type = passwordField.type === "password" ? "text" : "password";
-    }
-
-    // Lightning effect script
-    const canvas = document.getElementById("lightning");
-    const ctx = canvas.getContext("2d");
-    const input = document.getElementById("password");
-
-    function resizeCanvas() {
-        const rect = input.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-        canvas.style.width = rect.width + "px";
-        canvas.style.height = rect.height + "px";
-    }
-
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-
-    function drawLightning() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "rgba(0, 255, 255, 0.8)";
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            let x = 0;
-            let y = Math.random() * canvas.height;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            for (let j = 0; j < 10; j++) {
-                x += canvas.width / 10;
-                y += (Math.random() - 0.5) * 20;
-                ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-        }
-    }
-
-    let lightningInterval = null;
-
-    document.addEventListener("mousemove", (e) => {
-        const rect = input.getBoundingClientRect();
-        const distX = Math.abs(e.clientX - (rect.left + rect.width / 2));
-        const distY = Math.abs(e.clientY - (rect.top + rect.height / 2));
-        const distance = Math.sqrt(distX * distX + distY * distY);
-
-        if (distance < 100) {
-            if (!lightningInterval) {
-                lightningInterval = setInterval(drawLightning, 100);
-            }
-        } else {
-            clearInterval(lightningInterval);
-            lightningInterval = null;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+    passwordInput.addEventListener("input", () => {
+        lightningText.style.display = passwordInput.value ? "none" : "block";
     });
 </script>
 
 </body>
 </html>
+
 
 
