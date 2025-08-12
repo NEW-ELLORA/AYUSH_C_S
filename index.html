@@ -47,28 +47,51 @@
   }
 
   /* LOGIN BOX */
-  .login-box{
-    width:360px;
-    background:linear-gradient(180deg, rgba(4,10,12,0.75), rgba(0,0,0,0.5));
-    border-radius:18px;
-    padding:28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0,255,200,0.08);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(0,255,200,0.05);
-    position:relative;
-    z-index:20;
-  }
+   .login-box {
+        width: 350px;
+        padding: 40px;
+        background: rgba(0, 0, 0, 0.6); /* Black & Transparent */
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), /* Neon Glow */
+                    0 0 40px rgba(0, 255, 255, 0.6),
+                    0 0 60px rgba(0, 255, 255, 0.4);
+        color: white;
+        text-align: center;
+        position: relative;
+    }
 
-  /* Neon rim */
-  .login-box::before{
-    content:"";
-    position:absolute; inset:-8px;
-    border-radius:22px;
-    background: radial-gradient(ellipse at center, rgba(0,255,200,0.06), transparent 30%), linear-gradient(90deg,var(--neon),var(--neon-2),var(--accent));
-    filter: blur(18px);
-    z-index:-1;
-    opacity:0.9;
-  }
+    .login-box h2 {
+        margin-bottom: 20px;
+    }
+
+    .login-box input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-bottom: 2px solid cyan;
+        color: white;
+        font-size: 16px;
+        outline: none;
+    }
+
+    .login-box button {
+        background: cyan;
+        color: black;
+        border: none;
+        padding: 10px;
+        width: 100%;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .login-box button:hover {
+        background: white;
+        color: black;
+    }
 
   /* Title / shark text */
   .title-wrap{ position:relative; height:56px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
