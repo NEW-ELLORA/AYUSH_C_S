@@ -9,14 +9,20 @@
         margin: 0;
         height: 100vh;
         background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center center/cover;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        backdrop-filter: blur(5px);
         font-family: 'Poppins', sans-serif;
+        overflow: hidden;
+    }
+
+    canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 0;
     }
 
     .login-box {
+        position: relative;
+        z-index: 1;
         background: rgba(255, 255, 255, 0.08);
         padding: 40px;
         border-radius: 20px;
@@ -25,12 +31,19 @@
         width: 320px;
         backdrop-filter: blur(15px);
         animation: fadeIn 1.2s ease-in-out;
+        margin: auto;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .login-box h2 {
         color: white;
         margin-bottom: 20px;
         letter-spacing: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        border-right: 3px solid white;
+        width: 0;
     }
 
     input[type="password"] {
@@ -76,15 +89,18 @@
 </head>
 <body>
 
+<canvas id="particles"></canvas>
+
 <div class="login-box">
-    <h2>Enter Password</h2>
+    <h2 id="typewriter"></h2>
     <input type="password" id="password" placeholder="Password">
     <button onclick="checkPassword()">Login</button>
 </div>
 
 <script>
-    const correctPassword = "YourSecret123"; // Change your password here
-    const redirectURL = "https://example.com"; // Change the site you want to open
+    // PASSWORD PROTECTION
+    const correctPassword = "YourSecret123"; // Change password here
+    const redirectURL = "https://example.com"; // Change website here
 
     function checkPassword() {
         const enteredPassword = document.getElementById("password").value;
@@ -94,6 +110,77 @@
             alert("Incorrect Password ❌");
         }
     }
+
+    // TYPEWRITER EFFECT
+    const text = "Enter Password";
+    const typewriterElement = document.getElementById("typewriter");
+    let index = 0;
+
+    function typeWriter() {
+        if (index < text.length) {
+            typewriterElement.innerHTML += text.charAt(index);
+            index++;
+            setTimeout(typeWriter, 100);
+        } else {
+            typewriterElement.style.borderRight = "none"; // Remove cursor after typing
+        }
+    }
+    window.onload = typeWriter;
+
+    // PARTICLE BACKGROUND
+    const canvas = document.getElementById("particles");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particlesArray = [];
+    const particleCount = 80;
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = Math.random() * 1 - 0.5;
+            this.speedY = Math.random() * 1 - 0.5;
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+            if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+        }
+        draw() {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    function init() {
+        for (let i = 0; i < particleCount; i++) {
+            particlesArray.push(new Particle());
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particlesArray.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    init();
+    animate();
 </script>
 
 </body>
