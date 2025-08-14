@@ -4,23 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400&display=swap" rel="stylesheet">
+    <!-- Import Fonts and Icons -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ------------------------- Basic Setup & Theme Variables ------------------------- */
+        :root {
+            --neon-cyan: #00f5d4;
+            --accent-purple: #9b5de5;
+            --background: #020202;
+            --glass: rgba(10, 20, 30, 0.55);
+            --text-color: #f1f1f1;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #020202;
-            color: #00f5d4;
+            background-color: var(--background);
+            color: var(--text-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            text-align: center;
-            opacity: 0; /* Hidden by default */
+            padding: 2rem;
+            opacity: 0;
+            /* Initially hide content until security check passes */
             animation: fadeIn 1.5s forwards;
+            box-sizing: border-box;
         }
 
-        /* The 'body.unauthorized' class ensures content remains hidden if the check fails */
+        /* This class keeps the body hidden if the user is unauthorized */
         body.unauthorized {
             display: none;
         }
@@ -30,39 +44,204 @@
                 opacity: 1;
             }
         }
-        .content {
-             filter: drop-shadow(0 0 15px rgba(0, 245, 212, 0.7));
+        
+        /* ------------------------- Portfolio Container ------------------------- */
+        .portfolio-container {
+            display: flex;
+            background: var(--glass);
+            border: 1px solid rgba(0, 245, 212, 0.3);
+            border-radius: 15px;
+            backdrop-filter: blur(12px);
+            padding: 2.5rem 3rem;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 0 15px var(--neon-cyan), 0 0 35px var(--neon-cyan), inset 0 0 8px rgba(0, 245, 212, 0.2);
         }
+
+        /* ------------------------- Left Column (Photo) ------------------------- */
+        .photo-column {
+            flex: 0 0 250px;
+            margin-right: 3rem;
+            text-align: center;
+        }
+
+        .photo-column img {
+            width: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+            animation: pulse-glow 3s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            from {
+                box-shadow: 0 0 15px var(--neon-cyan);
+            }
+            to {
+                box-shadow: 0 0 30px var(--neon-cyan), 0 0 10px white;
+            }
+        }
+
+        /* ------------------------- Right Column (Details) ------------------------- */
+        .details-column {
+            flex: 1;
+        }
+
         h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
-            margin-bottom: 0.5rem;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px #00f5d4, 0 0 20px #00f5d4;
+            font-size: 2.8rem;
+            margin: 0 0 0.2rem 0;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px white;
         }
-        p {
+
+        h2 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
             font-size: 1.3rem;
-            color: white;
-            margin-top: 0;
+            color: var(--accent-purple);
+            text-shadow: 0 0 8px var(--accent-purple);
+            margin: 0 0 1.5rem 0;
+            letter-spacing: 1px;
+        }
+        
+        h3 {
+             font-family: 'Orbitron', sans-serif;
+             color: var(--neon-cyan);
+             border-bottom: 2px solid var(--neon-cyan);
+             padding-bottom: 8px;
+             margin: 2rem 0 1rem 0;
+             text-shadow: 0 0 5px var(--neon-cyan);
+        }
+
+        .bio {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        /* ------------------------- Skills & Socials ------------------------- */
+        .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .skill-tag {
+            background: rgba(0, 245, 212, 0.1);
+            border: 1px solid rgba(0, 245, 212, 0.4);
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .skill-tag:hover {
+             background: var(--neon-cyan);
+             color: var(--background);
+             transform: translateY(-2px);
+             box-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 20px;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            color: var(--text-color);
+            font-size: 1.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: var(--neon-cyan);
+            transform: scale(1.1) translateY(-3px);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* ------------------------- Responsive Design ------------------------- */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            .portfolio-container {
+                flex-direction: column;
+                align-items: center;
+                padding: 2rem;
+            }
+            .photo-column {
+                flex-basis: auto;
+                margin-right: 0;
+                margin-bottom: 2rem;
+                width: 200px;
+            }
+            h1 {
+                font-size: 2.2rem;
+                text-align: center;
+            }
+            h2 {
+                font-size: 1.1rem;
+                text-align: center;
+            }
+            .social-links {
+                 justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    
-    <!-- This script is the SECURITY GATE. It runs before any content is rendered. -->
+
+    <!-- This script is the SECURITY GATE. It runs BEFORE the page is rendered. -->
     <script>
         if (sessionStorage.getItem('isAuthenticated') !== 'true') {
-            // Add a class to ensure content stays hidden and then redirect.
-            document.body.classList.add('unauthorized');
-            // If the key is not found, boot them back to the login page immediately.
-            window.location.replace('index.html');
+            document.body.classList.add('unauthorized'); // Ensure content stays hidden
+            window.location.replace('index.html');      // Redirect unauthorized users
         }
     </script>
 
-    <!-- Page Content - This will only be shown if the security check passes -->
-    <div class="content">
-        <h1>ACCESS GRANTED</h1>
-        <p>Welcome to the secure dashboard.</p>
+    <!-- Page Content - This will only be shown if the security check above passes -->
+    <div class="portfolio-container">
+
+        <!-- ===== PHOTO COLUMN ===== -->
+        <div class="photo-column">
+            <!-- IMPORTANT: Replace this 'src' with the path to your own photo -->
+            <img src="https://via.placeholder.com/250" alt="Profile Picture">
+        </div>
+
+        <!-- ===== DETAILS COLUMN ===== -->
+        <div class="details-column">
+            <!-- IMPORTANT: Replace with your details -->
+            <h1>AYUSH C_S</h1>
+            <h2>Cyber Security Analyst & Developer</h2>
+
+            <p class="bio">
+                A detail-oriented professional with a passion for cybersecurity and a knack for creating secure,
+                efficient applications. My experience lies in identifying vulnerabilities and building robust digital defenses.
+            </p>
+
+            <h3>Core Skills</h3>
+            <div class="skills-grid">
+                <!-- IMPORTANT: Replace with your skills -->
+                <span class="skill-tag">Penetration Testing</span>
+                <span class="skill-tag">Network Security</span>
+                <span class="skill-tag">Python</span>
+                <span class="skill-tag">JavaScript</span>
+                <span class="skill-tag">Risk Assessment</span>
+                <span class="skill-tag">Linux</span>
+                <span class="skill-tag">Cryptography</span>
+            </div>
+
+            <h3>Find Me Online</h3>
+            <div class="social-links">
+                <!-- IMPORTANT: Replace '#' with links to your profiles -->
+                <a href="#" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                <a href="#" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                <a href="#" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" target="_blank" title="Portfolio Website"><i class="fas fa-globe"></i></a>
+            </div>
+
+        </div>
     </div>
 
 </body>
