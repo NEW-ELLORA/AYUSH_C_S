@@ -95,7 +95,6 @@
         border-radius: 10px;
         backdrop-filter: blur(10px);
         color: #fff;
-        /* Replaced one-sided border with a full box-shadow for the neon glow */
         box-shadow: 0 0 8px var(--neon), 0 0 20px var(--neon), 0 0 40px var(--neon);
       }
 
@@ -207,7 +206,8 @@
       input[type="text"] {
         width: 100%;
         padding: 12px 44px 12px 14px;
-        box-sizing: border-box; /* Ensures padding doesn't affect final width */
+        box-sizing: border-box;
+        /* Ensures padding doesn't affect final width */
         border-radius: 10px;
         border: none;
         background: rgba(255, 255, 255, 0.06);
@@ -311,9 +311,7 @@
     <div class="page-stage" id="stage" style="visibility:hidden;">
         <div class="login-box" id="loginBox">
             <div class="title-wrap">
-                <div class="shark-text" id="sharkText">Enter Password
-                    <!-- tiny lightning canvas will be appended/positioned later -->
-                </div>
+                <div class="shark-text" id="sharkText">Enter Password</div>
             </div>
             <div class="input-wrap">
                 <div class="field">
@@ -352,22 +350,18 @@
       setTimeout(() => {
         loading.style.display = 'none';
         stage.style.visibility = 'visible';
-        // show subtle focus
         document.body.classList.add('loaded');
       }, 1200);
       /* Login logic */
       loginBtn.addEventListener('click', () => {
         const val = passwordInput.value;
         if (val === correctPassword) {
-          // show welcome flash
           showWelcome();
-          // optionally redirect after small delay
           setTimeout(() => {
             window.location.href = redirectURL;
           }, 1400);
         } else {
           if (errorSound) errorSound.play().catch(() => {});
-          // small shake
           loginBtn.animate([{
             transform: 'translateX(0)'
           }, {
@@ -387,11 +381,12 @@
         t.type = t.type === 'password' ? 'text' : 'password';
         eyeToggle.textContent = t.type === 'password' ? '👁' : '🙈';
       });
-      /* Welcome overlay */
+      /* Welcome overlay - FIXED */
       function showWelcome() {
+        stage.style.display = 'none'; // Hide login form
         const w = document.createElement('div');
         w.className = 'welcome-overlay';
-        w.innerHTML = `<div class="welcome-text show">WELCOME</div>`;
+        w.innerHTML = `<div class="welcome-text">WELCOME</div>`;
         document.body.appendChild(w);
         setTimeout(() => {
           document.querySelector('.welcome-text').classList.add('show');
@@ -426,10 +421,8 @@
           const char = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
           const x = i * fontSize;
           const y = matrixCols[i] * fontSize;
-          // glowing green
           mctx.fillStyle = `rgba(0,255,140,0.95)`;
           mctx.fillText(char, x, y);
-          // faded shadow for depth
           mctx.fillStyle = `rgba(0,180,120,0.2)`;
           for (let s = 1; s < 3; s++) mctx.fillText(char, x, y - s * fontSize * 0.18);
           matrixCols[i]++;
@@ -466,7 +459,7 @@
         }
       }
       createRobots(7);
-      /* Draw using inline SVG data (same as #robotSVG) as image for canvas */
+      /* Draw using inline SVG data */
       const robotSVG = document.getElementById('robotSVG').outerHTML;
       const robotBlob = new Blob([robotSVG], {
         type: 'image/svg+xml'
@@ -474,7 +467,6 @@
       const robotURL = URL.createObjectURL(robotBlob);
       const robotImg = new Image();
       robotImg.src = robotURL;
-      robotImg.onload = () => { /* ready */ };
 
       function animateRobots() {
         rctx.clearRect(0, 0, robotsCanvas.width, robotsCanvas.height);
@@ -490,94 +482,13 @@
           rctx.globalAlpha = r.alpha;
           rctx.translate(r.x, r.y);
           rctx.rotate(r.rot);
-          // draw the robot image centered
-          const s = r.size / 64; // original viewBox 64
+          const s = r.size / 64;
           rctx.drawImage(robotImg, -32 * s, -32 * s, 64 * s, 64 * s);
           rctx.restore();
         }
         requestAnimationFrame(animateRobots);
       }
       animateRobots();
-      /* --------------------------- Lightning on text (canvas overlay) - Canvas sized to sharkText - Trigger when mouse near the text center --------------------------- */
-      const lightningCanvas = document.createElement('canvas');
-      lightningCanvas.id = 'lightning-canvas';
-      lightningCanvas.style.position = 'absolute';
-      lightningCanvas.style.pointerEvents = 'none';
-      lightningCanvas.style.zIndex = 21;
-      sharkText.appendChild(lightningCanvas);
-      const lctx = lightningCanvas.getContext('2d');
-
-      function resizeLightning() {
-        const rect = sharkText.getBoundingClientRect();
-        lightningCanvas.width = Math.max(160, Math.floor(rect.width));
-        lightningCanvas.height = Math.max(36, Math.floor(rect.height));
-        lightningCanvas.style.width = lightningCanvas.width + 'px';
-        lightningCanvas.style.height = lightningCanvas.height + 'px';
-        lightningCanvas.style.left = '50%';
-        lightningCanvas.style.transform = 'translateX(-50%)';
-        lightningCanvas.style.top = '0px';
-      }
-      resizeLightning();
-      window.addEventListener('resize', resizeLightning);
-      /* draw电 lightning with branching + glow */
-      function drawBolt() {
-        const w = lightningCanvas.width,
-          h = lightningCanvas.height;
-        lctx.clearRect(0, 0, w, h);
-        // glow base
-        lctx.shadowBlur = 14;
-        lctx.shadowColor = 'rgba(0,255,220,0.85)';
-        for (let b = 0; b < 2; b++) {
-          lctx.beginPath();
-          let x = 0,
-            y = h * 0.35 + (Math.random() - 0.5) * 8;
-          lctx.moveTo(x, y);
-          const steps = 10 + Math.floor(Math.random() * 8);
-          for (let i = 0; i < steps; i++) {
-            x += w / steps;
-            y += (Math.random() - 0.5) * (h * 0.18);
-            lctx.lineTo(x, y);
-          }
-          lctx.strokeStyle = `rgba(0,255,220,${0.18 + Math.random()*0.6})`;
-          lctx.lineWidth = 3 - b;
-          lctx.stroke();
-        }
-        // sharp white core
-        lctx.shadowBlur = 6;
-        lctx.beginPath();
-        let x2 = 0,
-          y2 = h * 0.45;
-        lctx.moveTo(x2, y2);
-        for (let i = 0; i < 12; i++) {
-          x2 += w / 12;
-          y2 += (Math.random() - 0.5) * (h * 0.12);
-          lctx.lineTo(x2, y2);
-        }
-        lctx.strokeStyle = 'rgba(255,255,255,0.85)';
-        lctx.lineWidth = 1.2;
-        lctx.stroke();
-      }
-      /* lightning interval & proximity check (mouse near sharkText center) */
-      let lInt = null;
-      document.addEventListener('mousemove', (ev) => {
-        const rect = sharkText.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const dx = ev.clientX - cx;
-        const dy = ev.clientY - cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          if (!lInt) lInt = setInterval(drawBolt, 120);
-        } else {
-          if (lInt) {
-            clearInterval(lInt);
-            lInt = null;
-            lctx.clearRect(0, 0, lightningCanvas.width, lightningCanvas.height);
-          }
-        }
-      });
-      /* small initial draw to set canvas blank */
-      drawBolt();
       /* --------------------------- Optional: small floating circuit particles --------------------------- */
       const circuitCanvas = document.createElement('canvas');
       circuitCanvas.id = 'circuit-canvas';
@@ -633,9 +544,8 @@
         requestAnimationFrame(drawCircuits);
       }
       drawCircuits();
-      /* --------------------------- Init tweaks: ensure canvases sizing & robot image loaded --------------------------- */
+      /* --------------------------- Init tweaks --------------------------- */
       window.addEventListener('load', () => {
-        // ensure robots image has loaded
         if (robotImg.complete) {
           resizeRobots();
           animateRobots();
@@ -645,17 +555,11 @@
             animateRobots();
           };
         }
-        // apply lightning canvas resize to match sharkText
-        resizeLightning();
       });
-      /* make sure to resize lightning when font dims change */
-      new ResizeObserver(resizeLightning).observe(sharkText);
-      /* cleanup on unload (revoke blob) */
       window.addEventListener('unload', () => {
         URL.revokeObjectURL(robotURL);
       });
     </script>
 </body>
 </html>
-
 
