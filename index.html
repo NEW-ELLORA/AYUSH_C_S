@@ -1,152 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Secure Login — CyberTech</title>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-  /* -------------------------
-     Basic & page layout
-     ------------------------- */
-  :root{
-    --neon:#00f5d4;
-    --neon-2:#00bbf9;
-    --accent:#9b5de5;
-    --bg-dark:#020202;
-    --glass: rgba(0,0,0,0.55);
-  }
-  html,body{height:100%;margin:0;font-family:"Poppins",system-ui,Segoe UI,Roboto,sans-serif;background:#000;overflow:hidden;}
-  /* make canvas cover whole screen */
-  canvas#matrix, canvas#robots, canvas#lightning { display:block; position:fixed; top:0; left:0; z-index:0; pointer-events:none; }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Secure Login — CyberTech</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      /* ------------------------- Basic & page layout ------------------------- */
+      :root {
+        --neon: #00f5d4;
+        --neon-2: #00bbf9;
+        --accent: #9b5de5;
+        --bg-dark: #020202;
+        --glass: rgba(0, 0, 0, 0.55);
+      }
 
-  /* Loading overlay (shows on page load) */
-  .loading-overlay{
-    position:fixed; inset:0; z-index:1000;
-    display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95));
-    color:var(--neon);
-    flex-direction:column;
-  }
-  .loader-ring{
-    width:86px;height:86px;border-radius:50%;
-    border:6px solid rgba(255,255,255,0.06);
-    border-top-color:var(--neon);
-    animation:spin 1.2s linear infinite;
-    box-shadow:0 0 20px rgba(0,255,200,0.08), 0 0 8px rgba(0,255,200,0.12) inset;
-  }
-  @keyframes spin{to{transform:rotate(360deg)}}
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: "Poppins", system-ui, Segoe UI, Roboto, sans-serif;
+        background: #000;
+        overflow: hidden;
+      }
 
-  .loading-text{ margin-top:18px; font-family:"Orbitron",sans-serif; letter-spacing:3px; font-weight:700; color: #9afbe8; }
+      /* make canvas cover whole screen */
+      canvas#matrix,
+      canvas#robots,
+      canvas#lightning {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 0;
+        pointer-events: none;
+      }
 
-  /* Container for login */
-  .page-stage{
-    position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    z-index:10; pointer-events:auto;
-  }
+      /* Loading overlay (shows on page load) */
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95));
+        color: var(--neon);
+        flex-direction: column;
+      }
 
-  /* LOGIN BOX */
-    .login-box {
-        width: 320px;
-        padding: 40px;
-        background: rgba(0, 0, 0, 0.6); /* Black transparent */
+      .loader-ring {
+        width: 86px;
+        height: 86px;
+        border-radius: 50%;
+        border: 6px solid rgba(255, 255, 255, 0.06);
+        border-top-color: var(--neon);
+        animation: spin 1.2s linear infinite;
+        box-shadow: 0 0 20px rgba(0, 255, 200, 0.08), 0 0 8px rgba(0, 255, 200, 0.12) inset;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg)
+        }
+      }
+
+      .loading-text {
+        margin-top: 18px;
+        font-family: "Orbitron", sans-serif;
+        letter-spacing: 3px;
+        font-weight: 700;
+        color: #9afbe8;
+      }
+
+      /* Container for login */
+      .page-stage {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        pointer-events: auto;
+      }
+
+      /* LOGIN BOX - FIXED */
+      .login-box {
+        width: 340px;
+        padding: 30px;
+        background: var(--glass);
+        border: 1px solid rgba(0, 245, 212, 0.3);
         border-radius: 10px;
         backdrop-filter: blur(10px);
-        position: relative;
         color: #fff;
-    }
+        /* Replaced one-sided border with a full box-shadow for the neon glow */
+        box-shadow: 0 0 8px var(--neon), 0 0 20px var(--neon), 0 0 40px var(--neon);
+      }
 
-    /* Neon glow effect on right side */
-    .login-box::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: -5px;
-        width: 5px;
-        height: 100%;
-        background: cyan;
-        box-shadow: 0 0 15px cyan, 0 0 30px cyan, 0 0 60px cyan;
-        border-radius: 0 10px 10px 0;
-    }
-
-    .login-box h2 {
-        margin: 0 0 20px;
-        padding: 0;
-        text-align: center;
-        font-size: 24px;
-    }
-
-    .login-box .input-box {
-        position: relative;
-        margin-bottom: 20px;
-    }
-
-    .login-box .input-box input {
-        width: 100%;
-        padding: 10px;
-        background: transparent;
-        border: none;
-        border-bottom: 2px solid #fff;
-        outline: none;
-        color: #fff;
-        font-size: 16px;
-    }
-
-    .login-box .input-box label {
-        position: absolute;
-        top: 0;
-        left: 0;
-        padding: 10px 0;
-        pointer-events: none;
-        transition: 0.5s;
-        color: #aaa;
-    }
-
-    .login-box .input-box input:focus ~ label,
-    .login-box .input-box input:valid ~ label {
-        top: -20px;
-        left: 0;
-        color: cyan;
-        font-size: 12px;
-    }
-
-    .login-box input[type="submit"] {
-        width: 100%;
-        padding: 10px;
-        border: none;
-        background: cyan;
-        color: #000;
-        font-size: 18px;
-        cursor: pointer;
-        border-radius: 5px;
-        transition: 0.3s;
-    }
-
-    .login-box input[type="submit"]:hover {
-        background: #00e5ff;
-        box-shadow: 0 0 15px cyan;
-    }
-
-    input[type="password"],
-    input[type="text"] {
-        width: 100%;
-        padding: 12px 40px 12px 12px;
-        border: none;
-        border-radius: 8px;
-        outline: none;
-        font-size: 16px;
-        margin-bottom: 15px;
-        background: rgba(255, 255, 255, 0.15);
-        color: white;
-        text-align: center;
-    }
-
-    input::placeholder {
-        color: rgba(255, 255, 255, 0.6);
-    }
-
-    .toggle-password {
+      .toggle-password {
         position: absolute;
         right: 10px;
         top: 50%;
@@ -154,9 +107,9 @@
         cursor: pointer;
         color: white;
         font-size: 18px;
-    }
+      }
 
-    button {
+      button {
         width: 100%;
         padding: 12px;
         border: none;
@@ -167,451 +120,541 @@
         font-weight: bold;
         cursor: pointer;
         transition: 0.3s;
-    }
+      }
 
-    button:hover {
+      button:hover {
         transform: scale(1.05);
         box-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
-    }
+      }
 
-    @keyframes fadeIn {
-        from {opacity: 0; transform: translateY(-20px);}
-        to {opacity: 1; transform: translateY(0);}
-    }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
 
-  /* Title / shark text */
-  .title-wrap{ position:relative; height:56px; display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
-  .shark-text{
-    font-family:"Orbitron",sans-serif;
-    font-size:22px;
-    font-weight:700;
-    color:var(--neon);
-    position:relative;
-    padding:6px 12px;
-    letter-spacing:1px;
-    user-select:none;
-  }
-  /* moving highlight across shark text */
-  .shark-text::after{
-    content:""; position:absolute; left:-60%; top:0; width:60%; height:100%;
-    background:linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);
-    transform:skewX(-18deg);
-    animation:sharkSweep 2.2s linear infinite;
-    pointer-events:none;
-    mix-blend-mode:screen;
-  }
-  @keyframes sharkSweep{ 0%{left:-60%} 50%{left:140%} 100%{left:140%} }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-  /* input area */
-  .input-wrap{ display:flex; flex-direction:column; gap:14px; align-items:center; margin-top:6px; }
-  .field{
-    width:84%;
-    position:relative;
-  }
-  input[type="password"], input[type="text"]{
-    width:100%;
-    padding:12px 44px 12px 14px;
-    border-radius:10px;
-    border:none;
-    background: rgba(255,255,255,0.06);
-    color:#f1f1f1;
-    text-align:center;
-    font-size:15px;
-    outline:none;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-  }
-  input::placeholder{ color:rgba(255,255,255,0.45); }
+      /* Title / shark text */
+      .title-wrap {
+        position: relative;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
 
-  .eye{
-    position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; z-index:30;
-    font-size:18px; color:rgba(255,255,255,0.8);
-  }
+      .shark-text {
+        font-family: "Orbitron", sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--neon);
+        position: relative;
+        padding: 6px 12px;
+        letter-spacing: 1px;
+        user-select: none;
+      }
 
-  .btn{
-    width:84%;
-    margin:8px auto 0;
-    padding:12px;
-    border-radius:10px;
-    border:none; cursor:pointer;
-    background: linear-gradient(90deg, var(--neon), var(--neon-2), var(--accent));
-    color:white; font-weight:700; font-size:15px;
-    box-shadow:0 12px 30px rgba(0,0,0,0.5), 0 0 18px rgba(0,255,200,0.08);
-  }
+      /* moving highlight across shark text */
+      .shark-text::after {
+        content: "";
+        position: absolute;
+        left: -60%;
+        top: 0;
+        width: 60%;
+        height: 100%;
+        background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+        transform: skewX(-18deg);
+        animation: sharkSweep 2.2s linear infinite;
+        pointer-events: none;
+        mix-blend-mode: screen;
+      }
 
-  /* WELCOME flash after login */
-  .welcome-overlay{
-    position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:9999;
-    pointer-events:none;
-  }
-  .welcome-text{
-    font-family:"Orbitron",sans-serif; font-size:56px; color:var(--neon);
-    text-shadow: 0 0 12px rgba(0,255,200,0.6), 0 0 30px rgba(0,180,255,0.25);
-    transform:scale(0.6); opacity:0; transition:all 800ms cubic-bezier(.2,.9,.2,1);
-  }
-  .welcome-text.show{ transform:scale(1); opacity:1; }
+      @keyframes sharkSweep {
+        0% {
+          left: -60%
+        }
 
-  /* small helper for robot icon floating container */
-  .robot-float{ position:fixed; z-index:5; pointer-events:none; filter:drop-shadow(0 8px 18px rgba(0,0,0,0.6)); }
-  /* responsiveness */
-  @media (max-width:420px){ .login-box{ width:92%; padding:18px } .title-wrap{height:54px} .shark-text{font-size:18px} }
-</style>
+        50% {
+          left: 140%
+        }
+
+        100% {
+          left: 140%
+        }
+      }
+
+      /* input area */
+      .input-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        align-items: center;
+        margin-top: 6px;
+      }
+
+      .field {
+        width: 100%;
+        position: relative;
+      }
+
+      input[type="password"],
+      input[type="text"] {
+        width: 100%;
+        padding: 12px 44px 12px 14px;
+        box-sizing: border-box; /* Ensures padding doesn't affect final width */
+        border-radius: 10px;
+        border: none;
+        background: rgba(255, 255, 255, 0.06);
+        color: #f1f1f1;
+        text-align: center;
+        font-size: 15px;
+        outline: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      }
+
+      input::placeholder {
+        color: rgba(255, 255, 255, 0.45);
+      }
+
+      .eye {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        z-index: 30;
+        font-size: 18px;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .btn {
+        width: 100%;
+        margin: 8px auto 0;
+        padding: 12px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        background: linear-gradient(90deg, var(--neon), var(--neon-2), var(--accent));
+        color: white;
+        font-weight: 700;
+        font-size: 15px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 18px rgba(0, 255, 200, 0.08);
+      }
+
+      /* WELCOME flash after login */
+      .welcome-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        pointer-events: none;
+      }
+
+      .welcome-text {
+        font-family: "Orbitron", sans-serif;
+        font-size: 56px;
+        color: var(--neon);
+        text-shadow: 0 0 12px rgba(0, 255, 200, 0.6), 0 0 30px rgba(0, 180, 255, 0.25);
+        transform: scale(0.6);
+        opacity: 0;
+        transition: all 800ms cubic-bezier(.2, .9, .2, 1);
+      }
+
+      .welcome-text.show {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      /* small helper for robot icon floating container */
+      .robot-float {
+        position: fixed;
+        z-index: 5;
+        pointer-events: none;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.6));
+      }
+
+      /* responsiveness */
+      @media (max-width:420px) {
+        .login-box {
+          width: 92%;
+          padding: 18px
+        }
+
+        .title-wrap {
+          height: 54px
+        }
+
+        .shark-text {
+          font-size: 18px
+        }
+      }
+    </style>
 </head>
 <body>
-
-  <!-- Loading overlay -->
-  <div class="loading-overlay" id="loading">
-    <div class="loader-ring" aria-hidden="true"></div>
-    <div class="loading-text">INITIALIZING MODULE</div>
-  </div>
-
-  <!-- background canvases (matrix, robots, circuits) -->
-  <canvas id="matrix"></canvas>
-  <canvas id="robots"></canvas>
-
-  <!-- page content -->
-  <div class="page-stage" id="stage" style="visibility:hidden;">
-    <div class="login-box" id="loginBox">
-      <div class="title-wrap">
-        <div class="shark-text" id="sharkText">Enter Password
-          <!-- tiny lightning canvas will be appended/positioned later -->
-        </div>
-      </div>
-
-      <div class="input-wrap">
-        <div class="field">
-          <input type="password" id="password" placeholder="Password">
-          <div class="eye" id="eyeToggle" title="Show / hide">👁</div>
-        </div>
-        <button class="btn" id="loginBtn">Login</button>
-      </div>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loader-ring" aria-hidden="true"></div>
+        <div class="loading-text">INITIALIZING MODULE</div>
     </div>
-  </div>
+    <!-- background canvases (matrix, robots, circuits) -->
+    <canvas id="matrix"></canvas>
+    <canvas id="robots"></canvas>
+    <!-- page content -->
+    <div class="page-stage" id="stage" style="visibility:hidden;">
+        <div class="login-box" id="loginBox">
+            <div class="title-wrap">
+                <div class="shark-text" id="sharkText">Enter Password
+                    <!-- tiny lightning canvas will be appended/positioned later -->
+                </div>
+            </div>
+            <div class="input-wrap">
+                <div class="field">
+                    <input type="password" id="password" placeholder="Password">
+                    <div class="eye" id="eyeToggle" title="Show / hide">👁</div>
+                </div>
+                <button class="btn" id="loginBtn">Login</button>
+            </div>
+        </div>
+    </div>
+    <!-- floating robot SVG icons (we'll clone and animate with JS) -->
+    <svg id="robotSVG" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" style="display:none;">
+        <g fill="none" fill-rule="evenodd">
+            <rect rx="6" width="48" height="48" x="8" y="6" fill="#081016" />
+            <path d="M20 26c0-6 8-6 8-6s8 0 8 6v4H20v-4z" fill="#0ff" opacity="0.08" />
+            <circle cx="28" cy="30" r="3" fill="#00ffd6" />
+            <circle cx="36" cy="30" r="3" fill="#00ffd6" />
+            <rect x="24" y="36" width="16" height="4" rx="2" fill="#00ffd6" opacity="0.12" />
+            <rect x="18" y="14" width="28" height="6" rx="3" fill="#0ff" opacity="0.06" />
+        </g>
+    </svg>
+    <!-- audio for wrong password -->
+    <audio id="errorSound" src="error.mp3" preload="auto"></audio>
+    <script>
+      /* --------------------------- Page lifecycle & UI hooks --------------------------- */
+      const loading = document.getElementById('loading');
+      const stage = document.getElementById('stage');
+      const loginBtn = document.getElementById('loginBtn');
+      const passwordInput = document.getElementById('password');
+      const eyeToggle = document.getElementById('eyeToggle');
+      const sharkText = document.getElementById('sharkText');
+      const errorSound = document.getElementById('errorSound');
+      const correctPassword = "12345"; // change as needed
+      const redirectURL = "https://example.com";
+      /* Show stage after simulated load */
+      setTimeout(() => {
+        loading.style.display = 'none';
+        stage.style.visibility = 'visible';
+        // show subtle focus
+        document.body.classList.add('loaded');
+      }, 1200);
+      /* Login logic */
+      loginBtn.addEventListener('click', () => {
+        const val = passwordInput.value;
+        if (val === correctPassword) {
+          // show welcome flash
+          showWelcome();
+          // optionally redirect after small delay
+          setTimeout(() => {
+            window.location.href = redirectURL;
+          }, 1400);
+        } else {
+          if (errorSound) errorSound.play().catch(() => {});
+          // small shake
+          loginBtn.animate([{
+            transform: 'translateX(0)'
+          }, {
+            transform: 'translateX(-8px)'
+          }, {
+            transform: 'translateX(8px)'
+          }, {
+            transform: 'translateX(0)'
+          }], {
+            duration: 300
+          });
+        }
+      });
+      /* Toggle password visibility */
+      eyeToggle.addEventListener('click', () => {
+        const t = passwordInput;
+        t.type = t.type === 'password' ? 'text' : 'password';
+        eyeToggle.textContent = t.type === 'password' ? '👁' : '🙈';
+      });
+      /* Welcome overlay */
+      function showWelcome() {
+        const w = document.createElement('div');
+        w.className = 'welcome-overlay';
+        w.innerHTML = `<div class="welcome-text show">WELCOME</div>`;
+        document.body.appendChild(w);
+        setTimeout(() => {
+          document.querySelector('.welcome-text').classList.add('show');
+        }, 50);
+        setTimeout(() => {
+          w.remove();
+        }, 1500);
+      }
+      /* --------------------------- Matrix / coding rain canvas --------------------------- */
+      const matrixCanvas = document.getElementById('matrix');
+      const mctx = matrixCanvas.getContext('2d');
+      let matrixCols = [],
+        colCount = 0,
+        fontSize = 16;
 
-  <!-- floating robot SVG icons (we'll clone and animate with JS) -->
-  <svg id="robotSVG" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" style="display:none;">
-    <g fill="none" fill-rule="evenodd">
-      <rect rx="6" width="48" height="48" x="8" y="6" fill="#081016"/>
-      <path d="M20 26c0-6 8-6 8-6s8 0 8 6v4H20v-4z" fill="#0ff" opacity="0.08"/>
-      <circle cx="28" cy="30" r="3" fill="#00ffd6"/>
-      <circle cx="36" cy="30" r="3" fill="#00ffd6"/>
-      <rect x="24" y="36" width="16" height="4" rx="2" fill="#00ffd6" opacity="0.12"/>
-      <rect x="18" y="14" width="28" height="6" rx="3" fill="#0ff" opacity="0.06"/>
-    </g>
-  </svg>
+      function resizeMatrix() {
+        matrixCanvas.width = innerWidth;
+        matrixCanvas.height = innerHeight;
+        fontSize = Math.max(12, Math.floor(innerWidth / 120));
+        colCount = Math.floor(matrixCanvas.width / fontSize);
+        matrixCols = new Array(colCount).fill(0).map(() => Math.floor(Math.random() * matrixCanvas.height / fontSize));
+      }
+      resizeMatrix();
+      window.addEventListener('resize', resizeMatrix);
+      const matrixChars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/{}[]@#$%^&*()";
 
-  <!-- audio for wrong password -->
-  <audio id="errorSound" src="error.mp3" preload="auto"></audio>
+      function drawMatrix() {
+        mctx.fillStyle = "rgba(0,0,0,0.08)";
+        mctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+        mctx.font = `${fontSize}px monospace`;
+        for (let i = 0; i < colCount; i++) {
+          const char = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+          const x = i * fontSize;
+          const y = matrixCols[i] * fontSize;
+          // glowing green
+          mctx.fillStyle = `rgba(0,255,140,0.95)`;
+          mctx.fillText(char, x, y);
+          // faded shadow for depth
+          mctx.fillStyle = `rgba(0,180,120,0.2)`;
+          for (let s = 1; s < 3; s++) mctx.fillText(char, x, y - s * fontSize * 0.18);
+          matrixCols[i]++;
+          if (y > matrixCanvas.height && Math.random() > 0.975) matrixCols[i] = 0;
+        }
+        requestAnimationFrame(drawMatrix);
+      }
+      drawMatrix();
+      /* --------------------------- Floating robot icons (canvas) --------------------------- */
+      const robotsCanvas = document.getElementById('robots');
+      const rctx = robotsCanvas.getContext('2d');
+      let robots = [];
 
-<script>
-/* ---------------------------
-   Page lifecycle & UI hooks
-   --------------------------- */
-const loading = document.getElementById('loading');
-const stage = document.getElementById('stage');
-const loginBtn = document.getElementById('loginBtn');
-const passwordInput = document.getElementById('password');
-const eyeToggle = document.getElementById('eyeToggle');
-const sharkText = document.getElementById('sharkText');
-const errorSound = document.getElementById('errorSound');
-const correctPassword = "12345"; // change as needed
-const redirectURL = "https://example.com";
+      function resizeRobots() {
+        robotsCanvas.width = innerWidth;
+        robotsCanvas.height = innerHeight;
+      }
+      resizeRobots();
+      window.addEventListener('resize', resizeRobots);
 
-/* Show stage after simulated load */
-setTimeout(()=> {
-  loading.style.display='none';
-  stage.style.visibility='visible';
-  // show subtle focus
-  document.body.classList.add('loaded');
-}, 1200);
+      function createRobots(n = 6) {
+        robots = [];
+        for (let i = 0; i < n; i++) {
+          robots.push({
+            x: Math.random() * innerWidth,
+            y: Math.random() * innerHeight,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            size: 34 + Math.random() * 28,
+            rot: Math.random() * Math.PI * 2,
+            rotV: (Math.random() - 0.5) * 0.01,
+            alpha: 0.6 + Math.random() * 0.4
+          });
+        }
+      }
+      createRobots(7);
+      /* Draw using inline SVG data (same as #robotSVG) as image for canvas */
+      const robotSVG = document.getElementById('robotSVG').outerHTML;
+      const robotBlob = new Blob([robotSVG], {
+        type: 'image/svg+xml'
+      });
+      const robotURL = URL.createObjectURL(robotBlob);
+      const robotImg = new Image();
+      robotImg.src = robotURL;
+      robotImg.onload = () => { /* ready */ };
 
-/* Login logic */
-loginBtn.addEventListener('click', ()=> {
-  const val = passwordInput.value;
-  if (val === correctPassword){
-    // show welcome flash
-    showWelcome();
-    // optionally redirect after small delay
-    setTimeout(()=> { window.location.href = redirectURL; }, 1400);
-  } else {
-    if (errorSound) errorSound.play().catch(()=>{});
-    // small shake
-    loginBtn.animate([{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(0)'}],{duration:300});
-  }
-});
+      function animateRobots() {
+        rctx.clearRect(0, 0, robotsCanvas.width, robotsCanvas.height);
+        for (let r of robots) {
+          r.x += r.vx;
+          r.y += r.vy;
+          r.rot += r.rotV;
+          if (r.x < -r.size) r.x = innerWidth + r.size;
+          if (r.x > innerWidth + r.size) r.x = -r.size;
+          if (r.y < -r.size) r.y = innerHeight + r.size;
+          if (r.y > innerHeight + r.size) r.y = -r.size;
+          rctx.save();
+          rctx.globalAlpha = r.alpha;
+          rctx.translate(r.x, r.y);
+          rctx.rotate(r.rot);
+          // draw the robot image centered
+          const s = r.size / 64; // original viewBox 64
+          rctx.drawImage(robotImg, -32 * s, -32 * s, 64 * s, 64 * s);
+          rctx.restore();
+        }
+        requestAnimationFrame(animateRobots);
+      }
+      animateRobots();
+      /* --------------------------- Lightning on text (canvas overlay) - Canvas sized to sharkText - Trigger when mouse near the text center --------------------------- */
+      const lightningCanvas = document.createElement('canvas');
+      lightningCanvas.id = 'lightning-canvas';
+      lightningCanvas.style.position = 'absolute';
+      lightningCanvas.style.pointerEvents = 'none';
+      lightningCanvas.style.zIndex = 21;
+      sharkText.appendChild(lightningCanvas);
+      const lctx = lightningCanvas.getContext('2d');
 
-/* Toggle password visibility */
-eyeToggle.addEventListener('click', ()=> {
-  const t = passwordInput;
-  t.type = t.type === 'password' ? 'text' : 'password';
-  eyeToggle.textContent = t.type === 'password' ? '👁' : '🙈';
-});
+      function resizeLightning() {
+        const rect = sharkText.getBoundingClientRect();
+        lightningCanvas.width = Math.max(160, Math.floor(rect.width));
+        lightningCanvas.height = Math.max(36, Math.floor(rect.height));
+        lightningCanvas.style.width = lightningCanvas.width + 'px';
+        lightningCanvas.style.height = lightningCanvas.height + 'px';
+        lightningCanvas.style.left = '50%';
+        lightningCanvas.style.transform = 'translateX(-50%)';
+        lightningCanvas.style.top = '0px';
+      }
+      resizeLightning();
+      window.addEventListener('resize', resizeLightning);
+      /* draw电 lightning with branching + glow */
+      function drawBolt() {
+        const w = lightningCanvas.width,
+          h = lightningCanvas.height;
+        lctx.clearRect(0, 0, w, h);
+        // glow base
+        lctx.shadowBlur = 14;
+        lctx.shadowColor = 'rgba(0,255,220,0.85)';
+        for (let b = 0; b < 2; b++) {
+          lctx.beginPath();
+          let x = 0,
+            y = h * 0.35 + (Math.random() - 0.5) * 8;
+          lctx.moveTo(x, y);
+          const steps = 10 + Math.floor(Math.random() * 8);
+          for (let i = 0; i < steps; i++) {
+            x += w / steps;
+            y += (Math.random() - 0.5) * (h * 0.18);
+            lctx.lineTo(x, y);
+          }
+          lctx.strokeStyle = `rgba(0,255,220,${0.18 + Math.random()*0.6})`;
+          lctx.lineWidth = 3 - b;
+          lctx.stroke();
+        }
+        // sharp white core
+        lctx.shadowBlur = 6;
+        lctx.beginPath();
+        let x2 = 0,
+          y2 = h * 0.45;
+        lctx.moveTo(x2, y2);
+        for (let i = 0; i < 12; i++) {
+          x2 += w / 12;
+          y2 += (Math.random() - 0.5) * (h * 0.12);
+          lctx.lineTo(x2, y2);
+        }
+        lctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        lctx.lineWidth = 1.2;
+        lctx.stroke();
+      }
+      /* lightning interval & proximity check (mouse near sharkText center) */
+      let lInt = null;
+      document.addEventListener('mousemove', (ev) => {
+        const rect = sharkText.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = ev.clientX - cx;
+        const dy = ev.clientY - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          if (!lInt) lInt = setInterval(drawBolt, 120);
+        } else {
+          if (lInt) {
+            clearInterval(lInt);
+            lInt = null;
+            lctx.clearRect(0, 0, lightningCanvas.width, lightningCanvas.height);
+          }
+        }
+      });
+      /* small initial draw to set canvas blank */
+      drawBolt();
+      /* --------------------------- Optional: small floating circuit particles --------------------------- */
+      const circuitCanvas = document.createElement('canvas');
+      circuitCanvas.id = 'circuit-canvas';
+      circuitCanvas.style.position = 'fixed';
+      circuitCanvas.style.left = '0';
+      circuitCanvas.style.top = '0';
+      circuitCanvas.style.zIndex = '1';
+      circuitCanvas.style.pointerEvents = 'none';
+      document.body.appendChild(circuitCanvas);
+      const cctx = circuitCanvas.getContext('2d');
 
-/* Welcome overlay */
-function showWelcome(){
-  const w = document.createElement('div');
-  w.className='welcome-overlay';
-  w.innerHTML = `<div class="welcome-text show">WELCOME</div>`;
-  document.body.appendChild(w);
-  setTimeout(()=> {
-    document.querySelector('.welcome-text').classList.add('show');
-  },50);
-  setTimeout(()=> {
-    w.remove();
-  }, 1500);
-}
+      function resizeCircuit() {
+        circuitCanvas.width = innerWidth;
+        circuitCanvas.height = innerHeight;
+      }
+      resizeCircuit();
+      window.addEventListener('resize', resizeCircuit);
+      let circuits = [];
 
-/* ---------------------------
-   Matrix / coding rain canvas
-   --------------------------- */
-const matrixCanvas = document.getElementById('matrix');
-const mctx = matrixCanvas.getContext('2d');
+      function spawnCircuits(n = 60) {
+        circuits = [];
+        for (let i = 0; i < n; i++) {
+          circuits.push({
+            x: Math.random() * innerWidth,
+            y: Math.random() * innerHeight,
+            len: 8 + Math.random() * 24,
+            angle: Math.random() * Math.PI * 2,
+            speed: 0.15 + Math.random() * 0.45,
+            hue: 160 + Math.random() * 60,
+            alpha: 0.08 + Math.random() * 0.45
+          });
+        }
+      }
+      spawnCircuits(80);
 
-let matrixCols = [], colCount = 0, fontSize = 16;
-function resizeMatrix(){
-  matrixCanvas.width = innerWidth;
-  matrixCanvas.height = innerHeight;
-  fontSize = Math.max(12, Math.floor(innerWidth / 120));
-  colCount = Math.floor(matrixCanvas.width / fontSize);
-  matrixCols = new Array(colCount).fill(0).map(()=> Math.floor(Math.random()*matrixCanvas.height/fontSize));
-}
-resizeMatrix();
-window.addEventListener('resize', resizeMatrix);
-
-const matrixChars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/{}[]@#$%^&*()";
-
-function drawMatrix(){
-  mctx.fillStyle = "rgba(0,0,0,0.08)";
-  mctx.fillRect(0,0,matrixCanvas.width,matrixCanvas.height);
-  mctx.font = `${fontSize}px monospace`;
-  for (let i=0;i<colCount;i++){
-    const char = matrixChars.charAt(Math.floor(Math.random()*matrixChars.length));
-    const x = i*fontSize;
-    const y = matrixCols[i]*fontSize;
-    // glowing green
-    mctx.fillStyle = `rgba(0,255,140,0.95)`;
-    mctx.fillText(char, x, y);
-    // faded shadow for depth
-    mctx.fillStyle = `rgba(0,180,120,0.2)`;
-    for (let s=1;s<3;s++) mctx.fillText(char, x, y - s*fontSize*0.18);
-    matrixCols[i]++;
-    if (y > matrixCanvas.height && Math.random()>0.975) matrixCols[i]=0;
-  }
-  requestAnimationFrame(drawMatrix);
-}
-drawMatrix();
-
-/* ---------------------------
-   Floating robot icons (canvas)
-   --------------------------- */
-const robotsCanvas = document.getElementById('robots');
-const rctx = robotsCanvas.getContext('2d');
-let robots = [];
-function resizeRobots(){
-  robotsCanvas.width = innerWidth;
-  robotsCanvas.height = innerHeight;
-}
-resizeRobots();
-window.addEventListener('resize', resizeRobots);
-
-function createRobots(n=6){
-  robots = [];
-  for (let i=0;i<n;i++){
-    robots.push({
-      x: Math.random()*innerWidth,
-      y: Math.random()*innerHeight,
-      vx: (Math.random()-0.5)*0.4,
-      vy: (Math.random()-0.5)*0.4,
-      size: 34 + Math.random()*28,
-      rot: Math.random()*Math.PI*2,
-      rotV: (Math.random()-0.5)*0.01,
-      alpha: 0.6 + Math.random()*0.4
-    });
-  }
-}
-createRobots(7);
-
-/* Draw using inline SVG data (same as #robotSVG) as image for canvas */
-const robotSVG = document.getElementById('robotSVG').outerHTML;
-const robotBlob = new Blob([robotSVG],{type:'image/svg+xml'});
-const robotURL = URL.createObjectURL(robotBlob);
-const robotImg = new Image();
-robotImg.src = robotURL;
-robotImg.onload = ()=> { /* ready */ };
-
-function animateRobots(){
-  rctx.clearRect(0,0,robotsCanvas.width,robotsCanvas.height);
-  for (let r of robots){
-    r.x += r.vx; r.y += r.vy; r.rot += r.rotV;
-    if (r.x < -r.size) r.x = innerWidth + r.size;
-    if (r.x > innerWidth + r.size) r.x = -r.size;
-    if (r.y < -r.size) r.y = innerHeight + r.size;
-    if (r.y > innerHeight + r.size) r.y = -r.size;
-    rctx.save();
-    rctx.globalAlpha = r.alpha;
-    rctx.translate(r.x, r.y);
-    rctx.rotate(r.rot);
-    // draw the robot image centered
-    const s = r.size/64; // original viewBox 64
-    rctx.drawImage(robotImg, -32*s, -32*s, 64*s, 64*s);
-    rctx.restore();
-  }
-  requestAnimationFrame(animateRobots);
-}
-animateRobots();
-
-/* ---------------------------
-   Lightning on text (canvas overlay)
-   - Canvas sized to sharkText
-   - Trigger when mouse near the text center
-   --------------------------- */
-const lightningCanvas = document.createElement('canvas');
-lightningCanvas.id = 'lightning-canvas';
-lightningCanvas.style.position='absolute';
-lightningCanvas.style.pointerEvents='none';
-lightningCanvas.style.zIndex = 21;
-sharkText.appendChild(lightningCanvas);
-const lctx = lightningCanvas.getContext('2d');
-
-function resizeLightning(){
-  const rect = sharkText.getBoundingClientRect();
-  lightningCanvas.width = Math.max(160, Math.floor(rect.width));
-  lightningCanvas.height = Math.max(36, Math.floor(rect.height));
-  lightningCanvas.style.width = lightningCanvas.width + 'px';
-  lightningCanvas.style.height = lightningCanvas.height + 'px';
-  lightningCanvas.style.left = '50%';
-  lightningCanvas.style.transform = 'translateX(-50%)';
-  lightningCanvas.style.top = '0px';
-}
-resizeLightning();
-window.addEventListener('resize', resizeLightning);
-
-/* draw电 lightning with branching + glow */
-function drawBolt(){
-  const w = lightningCanvas.width, h = lightningCanvas.height;
-  lctx.clearRect(0,0,w,h);
-  // glow base
-  lctx.shadowBlur = 14; lctx.shadowColor = 'rgba(0,255,220,0.85)';
-  for (let b=0;b<2;b++){
-    lctx.beginPath();
-    let x=0, y = h*0.35 + (Math.random()-0.5)*8;
-    lctx.moveTo(x,y);
-    const steps = 10 + Math.floor(Math.random()*8);
-    for (let i=0;i<steps;i++){
-      x += w/steps;
-      y += (Math.random()-0.5)* (h*0.18);
-      lctx.lineTo(x,y);
-    }
-    lctx.strokeStyle = `rgba(0,255,220,${0.18 + Math.random()*0.6})`;
-    lctx.lineWidth = 3 - b;
-    lctx.stroke();
-  }
-  // sharp white core
-  lctx.shadowBlur = 6; lctx.beginPath();
-  let x2 = 0, y2 = h*0.45;
-  lctx.moveTo(x2,y2);
-  for (let i=0;i<12;i++){
-    x2 += w/12;
-    y2 += (Math.random()-0.5)* (h*0.12);
-    lctx.lineTo(x2,y2);
-  }
-  lctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  lctx.lineWidth = 1.2;
-  lctx.stroke();
-}
-
-/* lightning interval & proximity check (mouse near sharkText center) */
-let lInt = null;
-document.addEventListener('mousemove', (ev)=>{
-  const rect = sharkText.getBoundingClientRect();
-  const cx = rect.left + rect.width/2;
-  const cy = rect.top + rect.height/2;
-  const dx = ev.clientX - cx;
-  const dy = ev.clientY - cy;
-  const dist = Math.sqrt(dx*dx + dy*dy);
-  if (dist < 120){
-    if (!lInt) lInt = setInterval(drawBolt, 120);
-  } else {
-    if (lInt) { clearInterval(lInt); lInt = null; lctx.clearRect(0,0,lightningCanvas.width,lightningCanvas.height); }
-  }
-});
-
-/* small initial draw to set canvas blank */
-drawBolt();
-
-/* ---------------------------
-   Optional: small floating circuit particles
-   --------------------------- */
-const circuitCanvas = document.createElement('canvas');
-circuitCanvas.id='circuit-canvas';
-circuitCanvas.style.position='fixed';
-circuitCanvas.style.left='0'; circuitCanvas.style.top='0'; circuitCanvas.style.zIndex='1';
-circuitCanvas.style.pointerEvents='none';
-document.body.appendChild(circuitCanvas);
-const cctx = circuitCanvas.getContext('2d');
-
-function resizeCircuit(){ circuitCanvas.width = innerWidth; circuitCanvas.height = innerHeight; }
-resizeCircuit(); window.addEventListener('resize', resizeCircuit);
-
-let circuits = [];
-function spawnCircuits(n=60){
-  circuits = [];
-  for (let i=0;i<n;i++){
-    circuits.push({
-      x: Math.random()*innerWidth,
-      y: Math.random()*innerHeight,
-      len: 8 + Math.random()*24,
-      angle: Math.random()*Math.PI*2,
-      speed: 0.15 + Math.random()*0.45,
-      hue: 160 + Math.random()*60,
-      alpha: 0.08 + Math.random()*0.45
-    });
-  }
-}
-spawnCircuits(80);
-
-function drawCircuits(){
-  cctx.clearRect(0,0,circuitCanvas.width,circuitCanvas.height);
-  for (let p of circuits){
-    p.x += Math.cos(p.angle)*p.speed; p.y += Math.sin(p.angle)*p.speed;
-    p.angle += (Math.random()-0.5)*0.02;
-    if (p.x < -50) p.x = innerWidth+50;
-    if (p.x > innerWidth+50) p.x = -50;
-    if (p.y < -50) p.y = innerHeight+50;
-    if (p.y > innerHeight+50) p.y = -50;
-    cctx.beginPath();
-    cctx.strokeStyle = `hsla(${p.hue}, 90%, 55%, ${p.alpha})`;
-    cctx.lineWidth = 1;
-    cctx.moveTo(p.x, p.y);
-    cctx.lineTo(p.x + Math.cos(p.angle)*(p.len), p.y + Math.sin(p.angle)*(p.len));
-    cctx.stroke();
-  }
-  requestAnimationFrame(drawCircuits);
-}
-drawCircuits();
-
-/* ---------------------------
-   Init tweaks: ensure canvases sizing & robot image loaded
-   --------------------------- */
-window.addEventListener('load', ()=> {
-  // ensure robots image has loaded
-  if (robotImg.complete) {
-    resizeRobots();
-    animateRobots();
-  } else {
-    robotImg.onload = ()=> { resizeRobots(); animateRobots(); };
-  }
-
-  // apply lightning canvas resize to match sharkText
-  resizeLightning();
-});
-
-/* make sure to resize lightning when font dims change */
-new ResizeObserver(resizeLightning).observe(sharkText);
-
-/* cleanup on unload (revoke blob) */
-window.addEventListener('unload', ()=> { URL.revokeObjectURL(robotURL); });
-
-</script>
+      function drawCircuits() {
+        cctx.clearRect(0, 0, circuitCanvas.width, circuitCanvas.height);
+        for (let p of circuits) {
+          p.x += Math.cos(p.angle) * p.speed;
+          p.y += Math.sin(p.angle) * p.speed;
+          p.angle += (Math.random() - 0.5) * 0.02;
+          if (p.x < -50) p.x = innerWidth + 50;
+          if (p.x > innerWidth + 50) p.x = -50;
+          if (p.y < -50) p.y = innerHeight + 50;
+          if (p.y > innerHeight + 50) p.y = -50;
+          cctx.beginPath();
+          cctx.strokeStyle = `hsla(${p.hue}, 90%, 55%, ${p.alpha})`;
+          cctx.lineWidth = 1;
+          cctx.moveTo(p.x, p.y);
+          cctx.lineTo(p.x + Math.cos(p.angle) * (p.len), p.y + Math.sin(p.angle) * (p.len));
+          cctx.stroke();
+        }
+        requestAnimationFrame(drawCircuits);
+      }
+      drawCircuits();
+      /* --------------------------- Init tweaks: ensure canvases sizing & robot image loaded --------------------------- */
+      window.addEventListener('load', () => {
+        // ensure robots image has loaded
+        if (robotImg.complete) {
+          resizeRobots();
+          animateRobots();
+        } else {
+          robotImg.onload = () => {
+            resizeRobots();
+            animateRobots();
+          };
+        }
+        // apply lightning canvas resize to match sharkText
+        resizeLightning();
+      });
+      /* make sure to resize lightning when font dims change */
+      new ResizeObserver(resizeLightning).observe(sharkText);
+      /* cleanup on unload (revoke blob) */
+      window.addEventListener('unload', () => {
+        URL.revokeObjectURL(robotURL);
+      });
+    </script>
 </body>
 </html>
 
