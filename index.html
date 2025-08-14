@@ -27,8 +27,7 @@
 
       /* make canvas cover whole screen */
       canvas#matrix,
-      canvas#robots,
-      canvas#lightning {
+      canvas#robots {
         display: block;
         position: fixed;
         top: 0;
@@ -86,7 +85,7 @@
         pointer-events: auto;
       }
 
-      /* LOGIN BOX - FIXED */
+      /* LOGIN BOX */
       .login-box {
         width: 340px;
         padding: 30px;
@@ -126,18 +125,6 @@
         box-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
       }
 
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
       /* Title / shark text */
       .title-wrap {
         position: relative;
@@ -146,6 +133,7 @@
         align-items: center;
         justify-content: center;
         margin-bottom: 12px;
+        overflow: hidden; /* This line prevents the shine from leaving the box */
       }
 
       .shark-text {
@@ -207,7 +195,6 @@
         width: 100%;
         padding: 12px 44px 12px 14px;
         box-sizing: border-box;
-        /* Ensures padding doesn't affect final width */
         border-radius: 10px;
         border: none;
         background: rgba(255, 255, 255, 0.06);
@@ -381,7 +368,7 @@
         t.type = t.type === 'password' ? 'text' : 'password';
         eyeToggle.textContent = t.type === 'password' ? '👁' : '🙈';
       });
-      /* Welcome overlay - FIXED */
+      /* Welcome overlay */
       function showWelcome() {
         stage.style.display = 'none'; // Hide login form
         const w = document.createElement('div');
