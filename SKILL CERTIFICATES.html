@@ -26,38 +26,39 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            /* Add a fade-out for the preloader itself */
+            transition: opacity 0.3s ease;
         }
 
         #preloader img {
-            width: 40vw; /* Responsive width */
+            width: 40vw; 
             max-width: 350px;
             min-width: 200px;
             height: auto;
             mix-blend-mode: screen; 
-            /* Apply the updated, faster animation */
+            /* Apply the final, robust animation */
             animation: singleLaunch 3s ease-out forwards;
         }
         
-        /* --- UPDATED: FASTER ANIMATION FOR INSTANT TRANSITION --- */
+        /* UPDATED: ANIMATION FOR CONSISTENT BEHAVIOR */
         @keyframes singleLaunch {
             0% {
-                opacity: 0.5;
-                transform: translateY(100vh) scale(0.5); /* Start from way below */
+                opacity: 0;
+                transform: translateY(100vh) scale(0.5); /* Start completely below screen */
             }
-            20% {
-                opacity: 1; /* Quickly become visible */
+            30% {
+                opacity: 1; /* Fade in as it travels */
             }
             80% {
                 opacity: 1;
                 transform: translateY(0) scale(1); /* Arrive at center and hold */
             }
             100% {
-                opacity: 0; /* Quickly fade out while moving up slightly */
-                transform: translateY(-20vh) scale(1.1);
+                opacity: 0; /* Fade out completely */
+                transform: translateY(-20vh) scale(1.1); /* End state is invisible and off-screen */
             }
         }
         
-        /* Main content is hidden and has no separate animation */
         #main-content {
             display: none;
             flex-direction: column;
@@ -196,26 +197,12 @@
     <!-- MAIN CONTENT -->
     <main id="main-content">
         <h1>My Certificates</h1>
-
         <div class="certificates-container">
-            <div class="certificate-item popup-right neon-blue">
-                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Web+Development" alt="Web Development Certificate" class="certificate-image">
-                <div class="popup-description"><strong>Advanced Web Development</strong><br>Completed an intensive course on modern web development.</div>
-            </div>
-            <div class="certificate-item popup-left neon-pink">
-                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Python+Programming" alt="Python Certificate" class="certificate-image">
-                <div class="popup-description"><strong>Python for Everybody</strong><br>Mastered Python fundamentals, data structures, and algorithms.</div>
-            </div>
-            <div class="certificate-item popup-right neon-green">
-                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+UX/UI+Design" alt="UX/UI Design Certificate" class="certificate-image">
-                <div class="popup-description"><strong>Google UX/UI Design</strong><br>Gained skills in user research, wireframing, and prototyping.</div>
-            </div>
-            <div class="certificate-item popup-left neon-orange">
-                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Cloud+Computing" alt="Cloud Computing Certificate" class="certificate-image">
-                <div class="popup-description"><strong>AWS Certified Cloud Practitioner</strong><br>Demonstrated foundational knowledge of AWS cloud concepts.</div>
-            </div>
+            <div class="certificate-item popup-right neon-blue"><img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Web+Development" alt="Web Development Certificate" class="certificate-image"><div class="popup-description"><strong>Advanced Web Development</strong><br>Completed an intensive course on modern web development.</div></div>
+            <div class="certificate-item popup-left neon-pink"><img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Python+Programming" alt="Python Certificate" class="certificate-image"><div class="popup-description"><strong>Python for Everybody</strong><br>Mastered Python fundamentals, data structures, and algorithms.</div></div>
+            <div class="certificate-item popup-right neon-green"><img src="https://via.placeholder.com/600x400.png?text=Certificate+of+UX/UI+Design" alt="UX/UI Design Certificate" class="certificate-image"><div class="popup-description"><strong>Google UX/UI Design</strong><br>Gained skills in user research, wireframing, and prototyping.</div></div>
+            <div class="certificate-item popup-left neon-orange"><img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Cloud+Computing" alt="Cloud Computing Certificate" class="certificate-image"><div class="popup-description"><strong>AWS Certified Cloud Practitioner</strong><br>Demonstrated foundational knowledge of AWS cloud concepts.</div></div>
         </div>
-        
         <div class="nav-links">
             <a href="dashboard.html">← Back to Dashboard</a>
             <a href="#" id="logout-link">Logout</a>
@@ -224,20 +211,34 @@
 
     <!-- JAVASCRIPT -->
     <script>
-        // This function runs after the animation is complete
+        const preloader = document.getElementById('preloader');
+        const mainContent = document.getElementById('main-content');
+        let contentHasBeenShown = false;
+
+        // The function that shows the main content
         function showContent() {
-            const preloader = document.getElementById('preloader');
-            const mainContent = document.getElementById('main-content');
+            // This check prevents the function from running twice
+            if (contentHasBeenShown) return;
+            contentHasBeenShown = true;
             
             if (!document.body.classList.contains('unauthorized')) {
-                preloader.style.display = 'none'; // Hide the preloader
-                mainContent.style.display = 'flex'; // Show the main content INSTANTLY
-                document.body.style.overflow = 'auto'; // Restore scrollbars
+                preloader.style.opacity = '0'; // Start fading out the preloader background
+                
+                // Wait for the fade-out to finish, then hide it and show content
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                    mainContent.style.display = 'flex';
+                    document.body.style.overflow = 'auto';
+                }, 300); // 300ms matches the transition in the CSS
             }
         }
         
-        // UPDATED: Timeout now matches the new 3-second animation duration
-        setTimeout(showContent, 3000);
+        // --- THE ROBUST SOLUTION ---
+        // 1. Listen for the 'animationend' event. This is the primary trigger.
+        preloader.addEventListener('animationend', showContent);
+        
+        // 2. Add a failsafe timer. This runs only if the event somehow fails.
+        setTimeout(showContent, 3100); // Set for just after the animation should end
 
         // Logout script remains the same
         document.getElementById('logout-link').addEventListener('click', function(event) {
