@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Certificates</title> <!-- Changed title -->
+    <title>My Certificates</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400&display=swap" rel="stylesheet">
     <style>
+        /* General Body Styles */
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #020202;
@@ -13,24 +14,59 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Align content to the top */
+            justify-content: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding-top: 3rem; /* Add some space at the top */
+            padding-top: 3rem;
+            /* Hide content until preloader is done */
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s 0.5s, opacity 0.5s linear;
+        }
+
+        body.loaded {
+            visibility: visible;
+            opacity: 1;
         }
 
         body.unauthorized {
             display: none;
         }
 
+        /* Preloader Styles */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #020202;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        #preloader img {
+            width: 250px; /* Adjust size as needed */
+        }
+        
+        /* Page Title */
         h1 {
             font-family: 'Orbitron', sans-serif;
             font-size: 3rem;
             color: #00f5d4;
             text-shadow: 0 0 10px #00f5d4;
-            margin-bottom: 3rem; /* Space below the title */
+            margin-bottom: 3rem;
         }
 
+        /* Links */
         a {
             color: #9b5de5;
             font-weight: 600;
@@ -47,10 +83,10 @@
         .certificates-container {
             display: flex;
             flex-direction: column;
-            gap: 2.5rem; /* Space between certificates */
+            gap: 2.5rem;
             width: 80%;
             max-width: 600px;
-            margin-bottom: 2rem; /* Space at the bottom */
+            margin-bottom: 2rem;
         }
 
         .certificate-item {
@@ -60,7 +96,7 @@
         }
 
         .certificate-item:hover {
-            transform: scale(1.05); /* Slightly enlarge on hover */
+            transform: scale(1.05);
         }
 
         .certificate-image {
@@ -81,7 +117,7 @@
         .neon-green .certificate-image {
             box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
         }
-         .neon-orange .certificate-image {
+        .neon-orange .certificate-image {
             box-shadow: 0 0 10px #ff8c00, 0 0 20px #ff8c00, 0 0 30px #ff8c00;
         }
 
@@ -111,16 +147,21 @@
 
         /* Pop-up Positioning */
         .popup-right .popup-description {
-            left: 105%; /* Position to the right of the certificate */
+            left: 105%;
         }
 
         .popup-left .popup-description {
-            right: 105%; /* Position to the left of the certificate */
+            right: 105%;
         }
 
     </style>
 </head>
 <body>
+
+    <!-- ROCKET PRELOADER - Displays for 5 seconds -->
+    <div id="preloader">
+        <img src="https://i.giphy.com/media/sI0h4s2ba3gG4/giphy.gif" alt="Rocket Launching...">
+    </div>
 
     <!-- SECURITY GATE - DO NOT REMOVE -->
     <script>
@@ -174,8 +215,20 @@
 
     </div>
     
-    <!-- This is a link to go back to the main dashboard -->
+    <!-- Link back to the main dashboard -->
     <a href="dashboard.html">← Back to Dashboard</a>
+
+    <!-- JavaScript for Preloader -->
+    <script>
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            
+            setTimeout(() => {
+                preloader.classList.add('hidden');
+                document.body.classList.add('loaded'); // Make the body content visible
+            }, 5000); // 5000 milliseconds = 5 seconds
+        });
+    </script>
 
 </body>
 </html>
