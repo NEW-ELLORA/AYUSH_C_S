@@ -11,10 +11,10 @@
             background-color: #020202;
             color: #f1f1f1;
             margin: 0;
-            overflow: hidden; /* Hide scrollbars during the animation */
+            overflow: hidden; /* Hide scrollbars during video intro */
         }
 
-        /* ROCKET PRELOADER STYLES */
+        /* VIDEO PRELOADER STYLES */
         #preloader {
             position: fixed;
             top: 0;
@@ -26,39 +26,17 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Add a fade-out for the preloader itself */
-            transition: opacity 0.3s ease;
+            transition: opacity 0.5s ease; /* For a smooth fade-out */
+        }
+        
+        /* Style for the video to make it full-screen */
+        #preloader video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* This makes the video fill the screen without stretching */
         }
 
-        #preloader img {
-            width: 40vw; 
-            max-width: 350px;
-            min-width: 200px;
-            height: auto;
-            mix-blend-mode: screen; 
-            /* Apply the final, robust animation */
-            animation: singleLaunch 3s ease-out forwards;
-        }
-        
-        /* UPDATED: ANIMATION FOR CONSISTENT BEHAVIOR */
-        @keyframes singleLaunch {
-            0% {
-                opacity: 0;
-                transform: translateY(100vh) scale(0.5); /* Start completely below screen */
-            }
-            30% {
-                opacity: 1; /* Fade in as it travels */
-            }
-            80% {
-                opacity: 1;
-                transform: translateY(0) scale(1); /* Arrive at center and hold */
-            }
-            100% {
-                opacity: 0; /* Fade out completely */
-                transform: translateY(-20vh) scale(1.1); /* End state is invisible and off-screen */
-            }
-        }
-        
+        /* Main content is hidden until preloader finishes */
         #main-content {
             display: none;
             flex-direction: column;
@@ -181,9 +159,15 @@
 </head>
 <body>
 
-    <!-- ROCKET PRELOADER -->
+    <!-- VIDEO PRELOADER -->
     <div id="preloader">
-        <img src="giphy (1).webp" alt="Rocket Launching...">
+        <video 
+            id="rocket-video"
+            autoplay 
+            muted      
+            playsinline 
+            src="_MConverter.eu_giphy (1).mp4">
+        </video>
     </div>
 
     <!-- SECURITY GATE -->
@@ -211,34 +195,29 @@
 
     <!-- JAVASCRIPT -->
     <script>
+        const rocketVideo = document.getElementById('rocket-video');
         const preloader = document.getElementById('preloader');
         const mainContent = document.getElementById('main-content');
-        let contentHasBeenShown = false;
-
-        // The function that shows the main content
+        
+        // This function shows the main content
         function showContent() {
-            // This check prevents the function from running twice
-            if (contentHasBeenShown) return;
-            contentHasBeenShown = true;
-            
             if (!document.body.classList.contains('unauthorized')) {
-                preloader.style.opacity = '0'; // Start fading out the preloader background
+                preloader.style.opacity = '0'; // Fade out the preloader
                 
-                // Wait for the fade-out to finish, then hide it and show content
+                // After the fade-out, hide it completely and show the content
                 setTimeout(() => {
                     preloader.style.display = 'none';
                     mainContent.style.display = 'flex';
-                    document.body.style.overflow = 'auto';
-                }, 300); // 300ms matches the transition in the CSS
+                    document.body.style.overflow = 'auto'; // Restore scrollbars
+                }, 500); // 500ms matches the transition in the CSS
             }
         }
         
-        // --- THE ROBUST SOLUTION ---
-        // 1. Listen for the 'animationend' event. This is the primary trigger.
-        preloader.addEventListener('animationend', showContent);
+        // Listen for the 'ended' event on the video.
+        rocketVideo.addEventListener('ended', showContent);
         
-        // 2. Add a failsafe timer. This runs only if the event somehow fails.
-        setTimeout(showContent, 3100); // Set for just after the animation should end
+        // Failsafe: If the video fails to load or play, show content after 5 seconds anyway.
+        setTimeout(showContent, 5000);
 
         // Logout script remains the same
         document.getElementById('logout-link').addEventListener('click', function(event) {
