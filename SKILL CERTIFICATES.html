@@ -11,10 +11,9 @@
             background-color: #020202;
             color: #f1f1f1;
             margin: 0;
-            overflow: hidden; /* Hide scrollbars during video intro */
+            overflow: hidden;
         }
-
-        /* VIDEO PRELOADER STYLES */
+        /* Preloader video */
         #preloader {
             position: fixed;
             top: 0;
@@ -26,17 +25,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.5s ease; /* For a smooth fade-out */
+            transition: opacity 0.5s ease;
         }
-        
-        /* Style for the video to make it full-screen */
         #preloader video {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* This makes the video fill the screen without stretching */
+            object-fit: cover;
         }
-
-        /* Main content is hidden until preloader finishes */
         #main-content {
             display: none;
             flex-direction: column;
@@ -46,11 +41,9 @@
             padding: 3rem 1rem 1rem;
             box-sizing: border-box;
         }
-
         body.unauthorized #main-content {
             display: none !important;
         }
-        
         h1 {
             font-family: 'Orbitron', sans-serif;
             font-size: 3rem;
@@ -59,14 +52,12 @@
             margin-bottom: 3rem;
             text-align: center;
         }
-
         .nav-links {
             display: flex;
             gap: 2.5rem;
             margin-top: 1.5rem;
             align-items: center;
         }
-
         .nav-links a {
             color: #9b5de5;
             font-weight: 600;
@@ -74,20 +65,16 @@
             font-size: 1.1rem;
             transition: color 0.3s, text-shadow 0.3s;
         }
-
         .nav-links a:hover {
             color: #00f5d4;
         }
-        
         #logout-link {
             color: #ff4d6d;
         }
-        
         #logout-link:hover {
             color: #ff8fa3;
             text-shadow: 0 0 8px #ff4d6d;
         }
-
         .certificates-container {
             display: flex;
             flex-direction: column;
@@ -96,17 +83,14 @@
             max-width: 600px;
             margin-bottom: 2rem;
         }
-
         .certificate-item {
             position: relative;
             cursor: pointer;
             transition: transform 0.3s ease;
         }
-
         .certificate-item:hover {
             transform: scale(1.05);
         }
-
         .certificate-image {
             width: 100%;
             display: block;
@@ -114,12 +98,10 @@
             border-radius: 8px;
             transition: box-shadow 0.3s ease;
         }
-
         .neon-blue .certificate-image { box-shadow: 0 0 10px #0077ff, 0 0 20px #0077ff, 0 0 30px #0077ff; }
         .neon-pink .certificate-image { box-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff; }
         .neon-green .certificate-image { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; }
         .neon-orange .certificate-image { box-shadow: 0 0 10px #ff8c00, 0 0 20px #ff8c00, 0 0 30px #ff8c00; }
-
         .popup-description {
             position: absolute;
             top: 50%;
@@ -137,15 +119,12 @@
             text-align: left;
             font-size: 0.95rem;
         }
-
         .certificate-item:hover .popup-description {
             visibility: visible;
             opacity: 1;
         }
-
         .popup-right .popup-description { left: 105%; }
         .popup-left .popup-description { right: 105%; }
-
         @media (max-width: 768px) {
             .popup-right .popup-description,
             .popup-left .popup-description {
@@ -159,18 +138,18 @@
 </head>
 <body>
 
-    <!-- VIDEO PRELOADER -->
+    <!-- Video Preloader -->
     <div id="preloader">
         <video 
             id="rocket-video"
             autoplay 
             muted      
             playsinline 
-            src="rocket.mp4">
+            src="_MConverter.eu_giphy (1).mp4">
         </video>
     </div>
 
-    <!-- SECURITY GATE -->
+    <!-- Security Check -->
     <script>
         if (sessionStorage.getItem('isAuthenticated') !== 'true') {
             document.body.classList.add('unauthorized'); 
@@ -178,7 +157,7 @@
         }
     </script>
 
-    <!-- MAIN CONTENT -->
+    <!-- Main Content -->
     <main id="main-content">
         <h1>My Certificates</h1>
         <div class="certificates-container">
@@ -193,33 +172,26 @@
         </div>
     </main>
 
-    <!-- JAVASCRIPT -->
+    <!-- JavaScript -->
     <script>
         const rocketVideo = document.getElementById('rocket-video');
         const preloader = document.getElementById('preloader');
         const mainContent = document.getElementById('main-content');
         
-        // This function shows the main content
         function showContent() {
             if (!document.body.classList.contains('unauthorized')) {
-                preloader.style.opacity = '0'; // Fade out the preloader
-                
-                // After the fade-out, hide it completely and show the content
+                preloader.style.opacity = '0';
                 setTimeout(() => {
                     preloader.style.display = 'none';
                     mainContent.style.display = 'flex';
-                    document.body.style.overflow = 'auto'; // Restore scrollbars
-                }, 500); // 500ms matches the transition in the CSS
+                    document.body.style.overflow = 'auto';
+                }, 500);
             }
         }
         
-        // Listen for the 'ended' event on the video.
         rocketVideo.addEventListener('ended', showContent);
-        
-        // Failsafe: If the video fails to load or play, show content after 5 seconds anyway.
         setTimeout(showContent, 5000);
 
-        // Logout script remains the same
         document.getElementById('logout-link').addEventListener('click', function(event) {
             event.preventDefault(); 
             sessionStorage.removeItem('isAuthenticated');
