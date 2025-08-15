@@ -75,6 +75,7 @@
             margin: 0;
             padding: 0;
             gap: 35px;
+            align-items: center; /* Vertically align items */
         }
 
         .nav-links a {
@@ -107,6 +108,19 @@
             width: 100%;
         }
 
+        /* --- UPDATED: Style for Logout Link --- */
+        #logout-link {
+            color: var(--accent-purple);
+            font-weight: 700;
+        }
+        #logout-link:hover {
+            color: #ff4d6d; /* A reddish color for contrast */
+            text-shadow: 0 0 8px #ff4d6d;
+        }
+        #logout-link::after {
+             background-color: #ff4d6d; /* Match hover color */
+        }
+        
         /* ------------------------- Main Content Area ------------------------- */
         .content-area {
             width: 100%;
@@ -178,6 +192,9 @@
                     <li><a href="internship.html">Internship</a></li>
                     <li><a href="hackathon.html">Hackathon</a></li>
                     <li><a href="company.html">Company</a></li>
+                    <!-- --- START OF UPDATE --- -->
+                    <li><a href="#" id="logout-link">Logout</a></li>
+                    <!-- --- END OF UPDATE --- -->
                 </ul>
             </div>
         </nav>
@@ -207,6 +224,21 @@
             </div>
         </main>
     </div>
+
+    <!-- --- START OF UPDATE --- -->
+    <!-- ADDED: Logout script at the end of the body -->
+    <script>
+        document.getElementById('logout-link').addEventListener('click', function(event) {
+            event.preventDefault(); // Prevents the link from navigating anywhere
+            
+            // Clear the session storage item that confirms authentication
+            sessionStorage.removeItem('isAuthenticated');
+            
+            // Redirect the user back to the login page
+            window.location.replace('index.html');
+        });
+    </script>
+    <!-- --- END OF UPDATE --- -->
 
 </body>
 </html>
