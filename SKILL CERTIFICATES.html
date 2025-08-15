@@ -18,7 +18,6 @@
             min-height: 100vh;
             margin: 0;
             padding-top: 3rem;
-            /* Hide content until preloader is done */
             opacity: 0;
             transition: opacity 0.5s linear;
         }
@@ -67,18 +66,37 @@
             margin-bottom: 3rem;
         }
 
+        /* --- UPDATED: Navigation Links Container --- */
+        .nav-links {
+            display: flex;
+            gap: 2.5rem; /* Adds space between links */
+            margin-top: 1.5rem;
+            align-items: center;
+        }
+
         /* Links */
-        a {
+        .nav-links a {
             color: #9b5de5;
             font-weight: 600;
             text-decoration: none;
-            margin-top: 1.5rem;
             font-size: 1.1rem;
+            transition: color 0.3s, text-shadow 0.3s;
         }
 
-        a:hover {
+        .nav-links a:hover {
             color: #00f5d4;
         }
+        
+        /* --- UPDATED: Style for Logout Link --- */
+        #logout-link {
+            color: #ff4d6d; /* Give logout a distinct color */
+        }
+        
+        #logout-link:hover {
+            color: #ff8fa3;
+            text-shadow: 0 0 8px #ff4d6d;
+        }
+
 
         /* Certificate Styles */
         .certificates-container {
@@ -161,7 +179,6 @@
 
     <!-- ROCKET PRELOADER - Displays for 5 seconds -->
     <div id="preloader">
-        <!-- THIS IS THE NEW, WORKING LINK. NO DOWNLOAD NEEDED. -->
         <img src="https://i.imgur.com/tW9n42b.gif" alt="Rocket Launching...">
     </div>
 
@@ -178,8 +195,7 @@
 
     <!-- Certificates Section -->
     <div class="certificates-container">
-
-        <!-- Certificate 1: Pop-up on the right, blue neon light -->
+        <!-- Certificate 1 -->
         <div class="certificate-item popup-right neon-blue">
             <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Web+Development" alt="Web Development Certificate" class="certificate-image">
             <div class="popup-description">
@@ -187,8 +203,7 @@
                 Completed an intensive course on modern web development, focusing on React, Node.js, and advanced CSS techniques.
             </div>
         </div>
-
-        <!-- Certificate 2: Pop-up on the left, pink neon light -->
+        <!-- Certificate 2 -->
         <div class="certificate-item popup-left neon-pink">
             <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Python+Programming" alt="Python Certificate" class="certificate-image">
             <div class="popup-description">
@@ -196,8 +211,7 @@
                 Mastered Python fundamentals, data structures, and algorithms through a comprehensive specialization from the University of Michigan.
             </div>
         </div>
-
-        <!-- Certificate 3: Pop-up on the right, green neon light -->
+        <!-- Certificate 3 -->
         <div class="certificate-item popup-right neon-green">
             <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+UX/UI+Design" alt="UX/UI Design Certificate" class="certificate-image">
             <div class="popup-description">
@@ -205,8 +219,7 @@
                 Gained skills in user research, wireframing, prototyping, and visual design to create intuitive and user-centered products.
             </div>
         </div>
-
-        <!-- Certificate 4: Pop-up on the left, orange neon light -->
+        <!-- Certificate 4 -->
         <div class="certificate-item popup-left neon-orange">
             <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Cloud+Computing" alt="Cloud Computing Certificate" class="certificate-image">
             <div class="popup-description">
@@ -214,24 +227,39 @@
                 Demonstrated foundational knowledge of AWS cloud concepts, services, security, architecture, pricing, and support.
             </div>
         </div>
-
     </div>
     
-    <!-- Link back to the main dashboard -->
-    <a href="dashboard.html">← Back to Dashboard</a>
+    <!-- --- START OF UPDATE --- -->
+    <!-- Navigation links with Logout button -->
+    <div class="nav-links">
+        <a href="dashboard.html">← Back to Dashboard</a>
+        <a href="#" id="logout-link">Logout</a>
+    </div>
+    <!-- --- END OF UPDATE --- -->
 
-    <!-- JavaScript for Preloader -->
+    <!-- --- UPDATED: Combined JavaScript for Preloader and Logout --- -->
     <script>
+        // Preloader Script
         window.addEventListener('load', () => {
             const preloader = document.getElementById('preloader');
             
             setTimeout(() => {
                 preloader.classList.add('hidden');
                 document.body.classList.add('loaded');
-            }, 5000); // 5000 milliseconds = 5 seconds
+            }, 2500); // Shortened to 2.5 seconds for better user experience
+        });
+
+        // Logout Script
+        document.getElementById('logout-link').addEventListener('click', function(event) {
+            event.preventDefault(); // Stop link from navigating
+            
+            // Clear the authentication status
+            sessionStorage.removeItem('isAuthenticated');
+            
+            // Redirect to the login page
+            window.location.replace('index.html');
         });
     </script>
 
 </body>
 </html>
-                
