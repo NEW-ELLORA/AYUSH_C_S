@@ -11,34 +11,52 @@
             background-color: #020202;
             color: #f1f1f1;
             margin: 0;
+            overflow: hidden; /* Hide scrollbars during preloader */
         }
 
-        /* PRELOADER */
+        /* --- UPDATED: ROCKET PRELOADER STYLES --- */
         #preloader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #020202;
+            background-color: #000; /* Solid black for better effect */
             z-index: 9999;
             display: flex;
             justify-content: center;
-            align-items: center;
-            opacity: 1;
-            transition: opacity 1s ease; /* Fade effect */
-        }
-
-        #preloader.fade-out {
-            opacity: 0;
-            pointer-events: none;
+            align-items: center; /* This will be the rocket's final position */
         }
 
         #preloader img {
-            width: 250px; 
+            width: 200px; /* Adjusted size for a better launch effect */
             height: auto;
+            /* This blends the rocket's light with the background */
+            mix-blend-mode: screen; 
+            /* Apply the custom animation */
+            animation: launchRocket 4s ease-in-out forwards;
         }
         
+        /* --- NEW: CUSTOM ROCKET LAUNCH ANIMATION --- */
+        @keyframes launchRocket {
+            0% {
+                opacity: 0;
+                transform: translateY(50vh) scale(0.6); /* Start from bottom, smaller */
+            }
+            30% {
+                opacity: 1; /* Fade in as it starts moving */
+            }
+            75% {
+                opacity: 1;
+                transform: translateY(0) scale(1); /* Arrive at center, full size */
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-10vh) scale(1.1); /* Drift up slightly and fade out */
+            }
+        }
+        
+        /* Main content is hidden until preloader finishes */
         #main-content {
             display: none;
             flex-direction: column;
@@ -47,6 +65,12 @@
             min-height: 100vh;
             padding: 3rem 1rem 1rem;
             box-sizing: border-box;
+            animation: fadeInContent 1s forwards; /* Add a fade-in for the content */
+        }
+
+        @keyframes fadeInContent {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         body.unauthorized #main-content {
@@ -163,7 +187,8 @@
 
     <!-- ROCKET PRELOADER -->
     <div id="preloader">
-        <img src="https://media.giphy.com/media/zoF4VLfv3HEgA/giphy.gif" alt="Rocket Launching...">
+        <!-- New GIF with transparent background for blending -->
+        <img src="https://i.pinimg.com/originals/1a/04/42/1a0442432851e28923c5352c16a67858.gif" alt="Rocket Launching...">
     </div>
 
     <!-- SECURITY GATE -->
@@ -205,21 +230,22 @@
 
     <!-- JAVASCRIPT -->
     <script>
+        // This function runs after the animation is complete
         function showContent() {
             const preloader = document.getElementById('preloader');
             const mainContent = document.getElementById('main-content');
             
             if (!document.body.classList.contains('unauthorized')) {
-                preloader.classList.add('fade-out'); // Start fade-out
-                setTimeout(() => {
-                    preloader.style.display = 'none';
-                    mainContent.style.display = 'flex';
-                }, 1000); // Match fade duration
+                preloader.style.display = 'none'; // Hide the preloader
+                mainContent.style.display = 'flex'; // Show the main content
+                document.body.style.overflow = 'auto'; // Restore scrollbars
             }
         }
         
+        // The timeout must match the duration of the CSS animation
         setTimeout(showContent, 4000);
 
+        // Logout script remains the same
         document.getElementById('logout-link').addEventListener('click', function(event) {
             event.preventDefault(); 
             sessionStorage.removeItem('isAuthenticated');
@@ -229,5 +255,4 @@
 
 </body>
 </html>
-
    
