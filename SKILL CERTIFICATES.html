@@ -19,13 +19,11 @@
             margin: 0;
             padding-top: 3rem;
             /* Hide content until preloader is done */
-            visibility: hidden;
             opacity: 0;
-            transition: visibility 0s 0.5s, opacity 0.5s linear;
+            transition: opacity 0.5s linear;
         }
 
         body.loaded {
-            visibility: visible;
             opacity: 1;
         }
 
@@ -45,6 +43,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            opacity: 1;
+            visibility: visible;
             transition: opacity 0.5s ease, visibility 0.5s ease;
         }
 
@@ -54,7 +54,8 @@
         }
 
         #preloader img {
-            width: 250px; /* Adjust size as needed */
+            width: 250px; 
+            height: auto;
         }
         
         /* Page Title */
@@ -160,7 +161,8 @@
 
     <!-- ROCKET PRELOADER - Displays for 5 seconds -->
     <div id="preloader">
-        <img src="https://i.giphy.com/media/sI0h4s2ba3gG4/giphy.gif" alt="Rocket Launching...">
+        <!-- THIS IS THE NEW, WORKING LINK. NO DOWNLOAD NEEDED. -->
+        <img src="https://i.imgur.com/tW9n42b.gif" alt="Rocket Launching...">
     </div>
 
     <!-- SECURITY GATE - DO NOT REMOVE -->
@@ -225,10 +227,11 @@
             
             setTimeout(() => {
                 preloader.classList.add('hidden');
-                document.body.classList.add('loaded'); // Make the body content visible
+                document.body.classList.add('loaded');
             }, 5000); // 5000 milliseconds = 5 seconds
         });
     </script>
 
 </body>
 </html>
+                
