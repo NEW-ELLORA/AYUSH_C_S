@@ -1,1 +1,35 @@
+<!-- TEMPLATE FOR projects.html, certificates.html, etc. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Page</title> <!-- Change this title if you wish -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #020202; color: #f1f1f1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        body.unauthorized { display: none; }
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 3rem; color: #00f5d4; text-shadow: 0 0 10px #00f5d4; }
+        a { color: #9b5de5; font-weight: 600; text-decoration: none; margin-top: 1.5rem; font-size: 1.1rem; }
+        a:hover { color: #00f5d4; }
+    </style>
+</head>
+<body>
 
+    <!-- SECURITY GATE - DO NOT REMOVE -->
+    <script>
+        if (sessionStorage.getItem('isAuthenticated') !== 'true') {
+            document.body.classList.add('unauthorized');
+            window.location.replace('index.html');
+        }
+    </script>
+
+    <!-- Page Content -->
+    <!-- CHANGE THE H1 FOR EACH FILE -->
+    <h1>My Projects</h1>
+    
+    <!-- This is a link to go back to the main dashboard -->
+    <a href="dashboard.html">← Back to Dashboard</a>
+
+</body>
+</html>
