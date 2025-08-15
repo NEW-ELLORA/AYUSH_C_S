@@ -11,26 +11,10 @@
             font-family: 'Poppins', sans-serif;
             background-color: #020202;
             color: #f1f1f1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
             margin: 0;
-            padding-top: 3rem;
-            opacity: 0;
-            transition: opacity 0.5s linear;
         }
 
-        body.loaded {
-            opacity: 1;
-        }
-
-        body.unauthorized {
-            display: none;
-        }
-
-        /* Preloader Styles */
+        /* --- NEW: Preloader is always visible by default --- */
         #preloader {
             position: fixed;
             top: 0;
@@ -42,19 +26,26 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-
-        #preloader.hidden {
-            opacity: 0;
-            visibility: hidden;
         }
 
         #preloader img {
             width: 250px; 
             height: auto;
+        }
+        
+        /* --- NEW: Main content container is HIDDEN by default --- */
+        #main-content {
+            display: none; /* This is the key change */
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 3rem 1rem 1rem; /* Added padding for mobile */
+            box-sizing: border-box;
+        }
+
+        body.unauthorized #main-content {
+            display: none !important; /* Ensure it stays hidden if unauthorized */
         }
         
         /* Page Title */
@@ -64,17 +55,17 @@
             color: #00f5d4;
             text-shadow: 0 0 10px #00f5d4;
             margin-bottom: 3rem;
+            text-align: center;
         }
 
-        /* --- UPDATED: Navigation Links Container --- */
+        /* Navigation Links Container */
         .nav-links {
             display: flex;
-            gap: 2.5rem; /* Adds space between links */
+            gap: 2.5rem;
             margin-top: 1.5rem;
             align-items: center;
         }
 
-        /* Links */
         .nav-links a {
             color: #9b5de5;
             font-weight: 600;
@@ -87,9 +78,8 @@
             color: #00f5d4;
         }
         
-        /* --- UPDATED: Style for Logout Link --- */
         #logout-link {
-            color: #ff4d6d; /* Give logout a distinct color */
+            color: #ff4d6d;
         }
         
         #logout-link:hover {
@@ -97,13 +87,12 @@
             text-shadow: 0 0 8px #ff4d6d;
         }
 
-
         /* Certificate Styles */
         .certificates-container {
             display: flex;
             flex-direction: column;
             gap: 2.5rem;
-            width: 80%;
+            width: 90%;
             max-width: 600px;
             margin-bottom: 2rem;
         }
@@ -127,18 +116,10 @@
         }
 
         /* Neon Light System */
-        .neon-blue .certificate-image {
-            box-shadow: 0 0 10px #0077ff, 0 0 20px #0077ff, 0 0 30px #0077ff;
-        }
-        .neon-pink .certificate-image {
-            box-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff;
-        }
-        .neon-green .certificate-image {
-            box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
-        }
-        .neon-orange .certificate-image {
-            box-shadow: 0 0 10px #ff8c00, 0 0 20px #ff8c00, 0 0 30px #ff8c00;
-        }
+        .neon-blue .certificate-image { box-shadow: 0 0 10px #0077ff, 0 0 20px #0077ff, 0 0 30px #0077ff; }
+        .neon-pink .certificate-image { box-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff; }
+        .neon-green .certificate-image { box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        .neon-orange .certificate-image { box-shadow: 0 0 10px #ff8c00, 0 0 20px #ff8c00, 0 0 30px #ff8c00; }
 
         /* Pop-up Description Styles */
         .popup-description {
@@ -165,101 +146,93 @@
         }
 
         /* Pop-up Positioning */
-        .popup-right .popup-description {
-            left: 105%;
-        }
+        .popup-right .popup-description { left: 105%; }
+        .popup-left .popup-description { right: 105%; }
 
-        .popup-left .popup-description {
-            right: 105%;
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .popup-right .popup-description,
+            .popup-left .popup-description {
+                left: 50%;
+                top: 105%;
+                transform: translateX(-50%);
+                width: 80%;
+            }
         }
-
     </style>
 </head>
 <body>
 
-    <!-- ROCKET PRELOADER - Displays for 5 seconds -->
+    <!-- ROCKET PRELOADER - This is the only thing visible on page load -->
     <div id="preloader">
-        <img src="https://i.imgur.com/tW9n42b.gif" alt="Rocket Launching...">
+        <!-- Using a different, very reliable GIF link just in case -->
+        <img src="https://media.tenor.com/28b0j_1i4wUAAAAC/rocket-launch-rocket.gif" alt="Rocket Launching...">
     </div>
 
-    <!-- SECURITY GATE - DO NOT REMOVE -->
+    <!-- SECURITY GATE - This runs first to check authentication -->
     <script>
         if (sessionStorage.getItem('isAuthenticated') !== 'true') {
-            document.body.classList.add('unauthorized');
+            document.body.classList.add('unauthorized'); 
             window.location.replace('index.html');
         }
     </script>
 
-    <!-- Page Content -->
-    <h1>My Certificates</h1>
+    <!-- --- NEW: MAIN CONTENT WRAPPER (HIDDEN BY DEFAULT) --- -->
+    <main id="main-content">
 
-    <!-- Certificates Section -->
-    <div class="certificates-container">
-        <!-- Certificate 1 -->
-        <div class="certificate-item popup-right neon-blue">
-            <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Web+Development" alt="Web Development Certificate" class="certificate-image">
-            <div class="popup-description">
-                <strong>Advanced Web Development</strong><br>
-                Completed an intensive course on modern web development, focusing on React, Node.js, and advanced CSS techniques.
-            </div>
-        </div>
-        <!-- Certificate 2 -->
-        <div class="certificate-item popup-left neon-pink">
-            <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Python+Programming" alt="Python Certificate" class="certificate-image">
-            <div class="popup-description">
-                <strong>Python for Everybody</strong><br>
-                Mastered Python fundamentals, data structures, and algorithms through a comprehensive specialization from the University of Michigan.
-            </div>
-        </div>
-        <!-- Certificate 3 -->
-        <div class="certificate-item popup-right neon-green">
-            <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+UX/UI+Design" alt="UX/UI Design Certificate" class="certificate-image">
-            <div class="popup-description">
-                <strong>Google UX/UI Design Professional Certificate</strong><br>
-                Gained skills in user research, wireframing, prototyping, and visual design to create intuitive and user-centered products.
-            </div>
-        </div>
-        <!-- Certificate 4 -->
-        <div class="certificate-item popup-left neon-orange">
-            <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Cloud+Computing" alt="Cloud Computing Certificate" class="certificate-image">
-            <div class="popup-description">
-                <strong>AWS Certified Cloud Practitioner</strong><br>
-                Demonstrated foundational knowledge of AWS cloud concepts, services, security, architecture, pricing, and support.
-            </div>
-        </div>
-    </div>
-    
-    <!-- --- START OF UPDATE --- -->
-    <!-- Navigation links with Logout button -->
-    <div class="nav-links">
-        <a href="dashboard.html">← Back to Dashboard</a>
-        <a href="#" id="logout-link">Logout</a>
-    </div>
-    <!-- --- END OF UPDATE --- -->
+        <h1>My Certificates</h1>
 
-    <!-- --- UPDATED: Combined JavaScript for Preloader and Logout --- -->
+        <div class="certificates-container">
+            <div class="certificate-item popup-right neon-blue">
+                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Web+Development" alt="Web Development Certificate" class="certificate-image">
+                <div class="popup-description"><strong>Advanced Web Development</strong><br>Completed an intensive course on modern web development.</div>
+            </div>
+            <div class="certificate-item popup-left neon-pink">
+                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Python+Programming" alt="Python Certificate" class="certificate-image">
+                <div class="popup-description"><strong>Python for Everybody</strong><br>Mastered Python fundamentals, data structures, and algorithms.</div>
+            </div>
+            <div class="certificate-item popup-right neon-green">
+                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+UX/UI+Design" alt="UX/UI Design Certificate" class="certificate-image">
+                <div class="popup-description"><strong>Google UX/UI Design</strong><br>Gained skills in user research, wireframing, and prototyping.</div>
+            </div>
+            <div class="certificate-item popup-left neon-orange">
+                <img src="https://via.placeholder.com/600x400.png?text=Certificate+of+Cloud+Computing" alt="Cloud Computing Certificate" class="certificate-image">
+                <div class="popup-description"><strong>AWS Certified Cloud Practitioner</strong><br>Demonstrated foundational knowledge of AWS cloud concepts.</div>
+            </div>
+        </div>
+        
+        <div class="nav-links">
+            <a href="dashboard.html">← Back to Dashboard</a>
+            <a href="#" id="logout-link">Logout</a>
+        </div>
+
+    </main> <!-- End of main-content wrapper -->
+
+
+    <!-- --- NEW, SIMPLIFIED JAVASCRIPT LOGIC --- -->
     <script>
-        // Preloader Script
-        window.addEventListener('load', () => {
+        // --- 1. PRELOADER LOGIC ---
+        function showContent() {
             const preloader = document.getElementById('preloader');
+            const mainContent = document.getElementById('main-content');
             
-            setTimeout(() => {
-                preloader.classList.add('hidden');
-                document.body.classList.add('loaded');
-            }, 2500); // Shortened to 2.5 seconds for better user experience
-        });
+            if (!document.body.classList.contains('unauthorized')) {
+                preloader.style.display = 'none';
+                mainContent.style.display = 'flex';
+            }
+        }
+        
+        setTimeout(showContent, 4000); // Wait 4 seconds then show content
 
-        // Logout Script
+        // --- 2. LOGOUT LOGIC ---
+        // This event listener is attached directly and will work once the content is visible.
         document.getElementById('logout-link').addEventListener('click', function(event) {
-            event.preventDefault(); // Stop link from navigating
-            
-            // Clear the authentication status
+            event.preventDefault(); 
             sessionStorage.removeItem('isAuthenticated');
-            
-            // Redirect to the login page
             window.location.replace('index.html');
         });
     </script>
 
 </body>
 </html>
+   
