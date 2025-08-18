@@ -145,7 +145,7 @@
             autoplay 
             muted      
             playsinline 
-            src="_MConverter.eu_giphy (1).mp4">
+            src="https://media.giphy.com/media/o7N0L5xpdQSVgjw3fL/giphy.mp4">
         </video>
     </div>
 
@@ -174,7 +174,6 @@
 
     <!-- JavaScript -->
     <script>
-        const rocketVideo = document.getElementById('rocket-video');
         const preloader = document.getElementById('preloader');
         const mainContent = document.getElementById('main-content');
         
@@ -189,8 +188,8 @@
             }
         }
         
-        rocketVideo.addEventListener('ended', showContent);
-        setTimeout(showContent, 5000);
+        // Use a timeout of 2 seconds (2000 milliseconds) to show the content
+        setTimeout(showContent, 2000);
 
         document.getElementById('logout-link').addEventListener('click', function(event) {
             event.preventDefault(); 
