@@ -27,10 +27,11 @@
             align-items: center;
             transition: opacity 0.5s ease;
         }
+        /* --- THIS IS THE UPDATED STYLE --- */
         #preloader img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 400px; /* Set a maximum width */
+            width: 80%;       /* Use a percentage for responsiveness */
+            height: auto;     /* Maintain aspect ratio */
         }
         #main-content {
             display: none;
