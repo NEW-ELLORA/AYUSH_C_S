@@ -277,9 +277,9 @@
         /* Main Login Function */
         const handleLogin = () => {
             if (passwordInput.value === correctPassword) {
-                // Set keys in sessionStorage to prove authentication
+                // Set keys in storage to prove authentication
                 sessionStorage.setItem('isAuthenticated', 'true');
-                sessionStorage.setItem('siteAuthed','1'); // ADDED: grant SGPA page access too
+                sessionStorage.setItem('siteAuthed','1'); localStorage.setItem('siteAuthed','1');
                 showWelcome();
                 // Redirect after welcome animation
                 setTimeout(() => {
@@ -385,4 +385,5 @@
     </script>
 </body>
 </html>
+
 
