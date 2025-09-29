@@ -166,7 +166,15 @@
             h1 { font-size: 2.2rem; text-align: center; }
             h2 { font-size: 1.1rem; text-align: center; }
             .social-links { justify-content: center; }
-        } .sgpa-launcher{position:fixed;left:0;top:45%;transform:translateY(-50%);width:44px;height:48px;background:rgba(10,20,30,.95);border-right:1px solid rgba(0,245,212,.25);border-top-right-radius:10px;border-bottom-right-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.4);overflow:hidden;cursor:pointer;z-index:9999;transition:width .25s ease;} .sgpa-launcher:hover{width:230px;} .sgpa-launcher .row{display:flex;align-items:center;height:100%;gap:.75rem;padding:0 .75rem;color:#e8f1ff;text-decoration:none;} .sgpa-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 10px #00ffe5,0 0 20px #00ffe5;background:#00ffe5;} .sgpa-label{font-weight:600;opacity:.95;}
+        }
+
+        /* ===== Launcher stays hidden off-screen; appears when mouse touches far-left ===== */
+        .sgpa-launcher{position:fixed;left:-240px;top:45%;transform:translateY(-50%);width:44px;height:48px;background:rgba(10,20,30,.95);border-right:1px solid rgba(0,245,212,.25);border-top-right-radius:10px;border-bottom-right-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.4);overflow:hidden;cursor:pointer;z-index:9999;transition:left .2s ease,width .25s ease;opacity:1;}
+        body.edge-reveal .sgpa-launcher{left:0;}
+        .sgpa-launcher:hover{width:230px;}
+        .sgpa-launcher .row{display:flex;align-items:center;height:100%;gap:.75rem;padding:0 .75rem;color:#e8f1ff;text-decoration:none;}
+        .sgpa-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 10px #00ffe5,0 0 20px #00ffe5;background:#00ffe5;}
+        .sgpa-label{font-weight:600;opacity:.95;}
     </style>
 </head>
 <body>
@@ -179,7 +187,12 @@
         } else { sessionStorage.setItem('siteAuthed','1'); }
     </script>
 
-    <a class="sgpa-launcher" href="web/sgpa/index.html" onclick="sessionStorage.setItem('siteAuthed','1')"><div class="row"><span class="sgpa-dot"></span><span class="sgpa-label">Open SGPA</span></div></a><div class="main-container">
+    <!-- Pop-out launcher (hidden until mouse hits left edge). Update href if your path differs -->
+    <a class="sgpa-launcher" href="web/sgpa/index.html" onclick="sessionStorage.setItem('siteAuthed','1')">
+      <div class="row"><span class="sgpa-dot"></span><span class="sgpa-label">Open SGPA</span></div>
+    </a>
+
+    <div class="main-container">
 
         <!-- ===== MODERN NAVIGATION BAR ===== -->
         <nav class="navbar">
@@ -225,21 +238,26 @@
         </main>
     </div>
 
-    <!-- --- START OF UPDATE --- -->
-    <!-- ADDED: Logout script at the end of the body -->
+    <!-- ADDED: edge reveal handler -->
+    <script>
+      document.addEventListener('mousemove', function(e){
+        if(e.clientX <= 6){ document.body.classList.add('edge-reveal'); }
+        else if(!document.querySelector('.sgpa-launcher:hover')){
+          document.body.classList.remove('edge-reveal');
+        }
+      });
+    </script>
+
+    <!-- Logout script -->
     <script>
         document.getElementById('logout-link').addEventListener('click', function(event) {
-            event.preventDefault(); // Prevents the link from navigating anywhere
-            
-            // Clear the session storage item that confirms authentication
+            event.preventDefault();
             sessionStorage.removeItem('isAuthenticated');
-            
-            // Redirect the user back to the login page
+            sessionStorage.removeItem('siteAuthed');
             window.location.replace('index.html');
         });
     </script>
-    <!-- --- END OF UPDATE --- -->
-
 </body>
 </html>
+
 
