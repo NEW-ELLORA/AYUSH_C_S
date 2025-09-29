@@ -1,597 +1,676 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SGPA/CGPA Calculator</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root{
-      --bg:#0b0f14; --panel:#0f1620; --aqua:#00ffe5; --violet:#b784ff; --text:#e8f1ff; --muted:#9fb3c8;
-    }
-    html,body{height:100%}
-    body{
-      box-sizing:border-box;margin:0;color:var(--text);
-      background: radial-gradient(1200px 600px at -10% 10%, rgba(0,255,229,0.08), transparent 60%),
-                  radial-gradient(900px 500px at 110% 0%, rgba(183,132,255,0.08), transparent 60%),
-                  linear-gradient(180deg, #06090d, #0b0f14 30%, #0b0f14 100%);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    }
-    .glass-effect{background:rgba(15,22,32,0.75);border:1px solid rgba(0,255,229,0.18);box-shadow:0 0 40px rgba(0,255,229,0.05), inset 0 0 40px rgba(183,132,255,0.05);backdrop-filter:blur(8px);}
-    .card-hover{transition: all .3s ease;}
-    .card-hover:hover{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
-    .neon-title{ text-shadow: 0 0 10px rgba(0,255,229,.6), 0 0 30px rgba(183,132,255,.35); color: var(--aqua); letter-spacing:.03em; }
-    .gradient-border{ border:1px solid rgba(0,255,229,0.25); box-shadow:0 0 20px rgba(0,255,229,0.08), inset 0 0 20px rgba(183,132,255,0.08); }
-    .btn-primary{ background: linear-gradient(90deg, #2563eb, #7c3aed); border:1px solid rgba(124,58,237,.45); }
-    .btn-primary:hover{ filter: brightness(1.05); }
-    .btn-ghost{ background: transparent; border:1px solid rgba(0,255,229,0.25); }
-    .edge-launcher{ position: fixed; left: 0; top: 40%; transform: translateY(-50%); width: 44px; height: 48px; background: rgba(15,22,32,0.9); border-right: 1px solid rgba(0,255,229,0.25); border-top-right-radius: 10px; border-bottom-right-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); overflow: hidden; cursor: pointer; z-index: 50; transition: width .25s ease; }
-    .edge-launcher:hover{ width: 220px; }
-    .edge-launcher .row{ display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .75rem; color:var(--text); }
-    .edge-dot{ width:10px; height:10px; border-radius:50%; box-shadow: 0 0 10px var(--aqua), 0 0 20px var(--aqua); background: var(--aqua); }
-    .edge-label{ opacity: .92; font-weight:600; }
-    input::placeholder{ color:#8aa0b8; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SGPA / CGPA Multi-Student Analyzer (Web)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#0f1620; --card:#111a25; --text:#e9f2ff; --muted:#9fb3c8;
+    --aqua:#00ffe5; --violet:#b784ff; --red:#ff5d7a; --green:#22c55e; --blue:#3b82f6;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    color:var(--text);
+    background: radial-gradient(1200px 600px at -15% 10%, rgba(0,255,229,.07), transparent 60%),
+                radial-gradient(900px 500px at 110% -10%, rgba(183,132,255,.07), transparent 60%),
+                linear-gradient(180deg, #071019, #0b0f14 35%, #0b0f14 100%);
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:24px}
+  .glass{background:rgba(16,24,34,.8); border:1px solid rgba(0,255,229,.18); border-radius:14px; box-shadow:0 0 30px rgba(0,255,229,.06), inset 0 0 30px rgba(183,132,255,.05); backdrop-filter: blur(8px);}
+  .row{display:flex; gap:16px; align-items:center}
+  .btn{border:1px solid rgba(255,255,255,.14); background:#13202f; color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.primary{background:linear-gradient(90deg, var(--blue), #7c3aed); border-color:rgba(124,58,237,.45)}
+  .btn.danger{background:#2a1220; border-color:#661d35}
+  .btn.ghost{background:transparent}
+  input,select{background:#0e1723; color:#fff; border:1px solid rgba(255,255,255,.14); padding:9px 10px; border-radius:10px; outline:none}
+  table{width:100%; border-collapse:collapse}
+  th,td{border-bottom:1px solid rgba(255,255,255,.08); padding:8px}
+  th{text-align:left; color:#d6e4ff; font-weight:600}
+  .h1{font-size:28px; font-weight:800; letter-spacing:.2px; color:var(--aqua); text-shadow:0 0 10px rgba(0,255,229,.5), 0 0 22px rgba(183,132,255,.3)}
+  .muted{color:var(--muted)}
+  .card{background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px}
+  .grid{display:grid; gap:16px}
+  .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .right{display:flex; gap:10px; align-items:center}
+  .status{font-weight:700}
+  .chip{display:inline-block; padding:4px 8px; border-radius:999px; background:#17314b; border:1px solid rgba(255,255,255,.12)}
+  /* Edge launcher (hidden until hover near left) */
+  .edge{position:fixed; left:-176px; top:40%; transform:translateY(-50%); width:220px; height:48px;
+        background:rgba(13,19,28,.92); border-right:1px solid rgba(0,255,229,.28); border-top-right-radius:12px; border-bottom-right-radius:12px;
+        box-shadow:0 6px 18px rgba(0,0,0,.45); overflow:hidden; cursor:pointer; z-index:50; transition:left .25s ease}
+  .edge::before{content:""; position:absolute; left:-24px; top:0; bottom:0; width:30px}
+  .edge:hover{left:0}
+  .edge .edge-row{display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .85rem;}
+  .edge .dot{width:10px;height:10px;border-radius:50%;background:var(--aqua); box-shadow:0 0 10px var(--aqua), 0 0 18px var(--aqua)}
+  .edge a{color:#e8f1ff; text-decoration:none; font-weight:700}
+  /* Auth panel (simple local auth for profiles) */
+  .auth{max-width:520px; margin:40px auto; padding:24px}
+  .center{text-align:center}
+  .mb16{margin-bottom:16px}
+  .mb8{margin-bottom:8px}
+  .mt8{margin-top:8px}
+  .mt24{margin-top:24px}
+  .hide{display:none}
+</style>
 </head>
-<body class="min-h-screen" onload="if(sessionStorage.getItem('isAuthenticated')!=='true'){window.location.replace('../index.html')}">
+<body>
 
-  <!-- Edge launcher back to dashboard -->
-  <a class="edge-launcher" href="../dashboard.html" title="Back to Dashboard">
+<!-- Edge launcher back to dashboard (only visible when mouse is near the left edge / on hover) -->
+<div class="edge" title="Back to Dashboard">
+  <div class="edge-row">
+    <span class="dot"></span>
+    <a href="../dashboard.html">Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- Header -->
+  <div class="row" style="justify-content:space-between; margin-bottom:18px">
     <div class="row">
-      <span class="edge-dot"></span>
-      <span class="edge-label">Back to Dashboard</span>
+      <div class="h1">📊 SGPA / CGPA Analyzer</div>
+      <span class="chip">Web Edition</span>
     </div>
-  </a>
+    <div class="right">
+      <button id="btnExportAll" class="btn">⬇ Export All CSV</button>
+      <label class="btn">⬆ Import JSON<input id="importJson" type="file" accept="application/json" style="display:none"></label>
+      <button id="btnExportStudent" class="btn">⬇ Export Student JSON</button>
+    </div>
+  </div>
 
-  <!-- (REMOVED all password overlays/gates) -->
-
-  <!-- Original SGPA App: Login/Register (kept; optional for cloud sync) -->
-  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
-    <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold neon-title mb-2">📊 SGPA Calculator</h1>
-        <p class="text-[var(--muted)]">Multi-student analytics platform</p>
+  <!-- Auth / profile controls -->
+  <div id="authPanel" class="glass auth">
+    <div class="center mb16">
+      <div style="font-size:22px; font-weight:800; color:var(--aqua)">Profiles</div>
+      <div class="muted">Create, load, or continue as guest (data stored locally in your browser)</div>
+    </div>
+    <div class="grid g-2">
+      <div class="card">
+        <div class="mb8" style="font-weight:700">Create Profile</div>
+        <input id="regUser" placeholder="Username (e.g., ayush)" class="mb8" />
+        <input id="regPass" type="password" placeholder="Password" class="mb8" />
+        <button id="btnRegister" class="btn primary">Create</button>
       </div>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-white text-sm font-medium mb-2">Email</label>
-          <input type="email" id="loginUsername" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Enter email">
-        </div>
-
-        <div>
-          <label class="block text-white text-sm font-medium mb-2">Password</label>
-          <input type="password" id="loginPassword" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Enter password">
-        </div>
-
-        <button onclick="login()" class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-          Login (for cloud sync)
-        </button>
-
-        <button onclick="showRegister()" class="w-full bg-transparent border border-white/25 hover:border-white/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-          Create Account
-        </button>
-
-        <button onclick="skipAuth()" class="mt-2 w-full btn-ghost text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-          Skip & use local data
-        </button>
+      <div class="card">
+        <div class="mb8" style="font-weight:700">Login</div>
+        <input id="logUser" placeholder="Username" class="mb8" />
+        <input id="logPass" type="password" placeholder="Password" class="mb8" />
+        <button id="btnLogin" class="btn primary">Login</button>
+        <button id="btnGuest" class="btn mt8">Continue as Guest</button>
       </div>
     </div>
   </div>
 
-  <div id="registerScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
-    <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold neon-title mb-2">Create Account</h1>
-        <p class="text-[var(--muted)]">Optional — enables cloud backup</p>
+  <!-- Main app -->
+  <div id="app" class="hide">
+    <!-- Top bar -->
+    <div class="glass card mb16 row" style="justify-content:space-between">
+      <div class="row">
+        <div id="who" class="chip">Welcome, Guest</div>
+        <div id="cgpaBadge" class="chip">CGPA: 0.00</div>
+        <div id="credBadge" class="chip">Credits: 0</div>
       </div>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-white text-sm font-medium mb-2">Email</label>
-          <input type="email" id="regUsername" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="you@example.com">
-        </div>
-
-        <div>
-          <label class="block text-white text-sm font-medium mb-2">Password</label>
-          <input type="password" id="regPassword" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Choose password">
-        </div>
-
-        <button onclick="register()" class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-          Create Account
-        </button>
-
-        <button onclick="showLogin()" class="w-full bg-transparent border border-white/25 hover:border-white/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-          Back to Login
-        </button>
+      <div class="right">
+        <select id="studentSelect"></select>
+        <button id="btnNewStudent" class="btn">+ New Student</button>
+        <button id="btnSaveStudent" class="btn">Save Student</button>
+        <button id="btnLoadStudent" class="btn">Load Student</button>
+        <button id="btnLogout" class="btn danger">Logout</button>
       </div>
     </div>
-  </div>
 
-  <!-- Main App -->
-  <div id="mainApp" class="hidden min-h-screen">
-    <header class="glass-effect gradient-border p-4">
-      <div class="max-w-7xl mx-auto flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-          <h1 class="text-2xl font-bold neon-title">📊 SGPA Calculator</h1>
-          <span id="currentUser" class="text-[var(--muted)]"></span>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <button onclick="exportData()" class="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-lg transition border border-white/15">⬇️ Export</button>
-          <label class="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-lg transition border border-white/15 cursor-pointer">
-            ⬆️ Import
-            <input type="file" accept="application/json" onchange="importData(event)" class="hidden">
-          </label>
-
-          <select id="studentSelect" class="ml-2 px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400">
-            <option value="">Select Student</option>
-          </select>
-          <button onclick="showAddStudent()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-300">+ Add Student</button>
-          <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300">Logout</button>
-        </div>
+    <!-- Overview & goal -->
+    <div class="grid g-3 mb16">
+      <div class="glass card">
+        <div style="font-weight:700" class="mb8">CGPA progression</div>
+        <canvas id="overviewChart" height="120"></canvas>
       </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto p-6">
-      <div id="studentPanel" class="hidden">
-        <div class="glass-effect rounded-xl p-6 mb-6">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-white">Student: <span id="studentName"></span></h2>
-            <div class="flex space-x-2">
-              <button onclick="addSemester()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300">+ Add Semester</button>
-              <button onclick="showAnalytics()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition duration-300">📈 Analytics</button>
-            </div>
+      <div class="glass card">
+        <div style="font-weight:700" class="mb8">Goal planner</div>
+        <div class="grid g-2">
+          <div>
+            <div class="muted mb8">Prev CGPA</div>
+            <input id="prevCGPA" value="0" />
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white/10 rounded-lg p-4 text-center">
-              <div class="text-2xl font-bold text-white" id="currentCGPA">0.00</div>
-              <div class="text-[var(--muted)]">Current CGPA</div>
-            </div>
-            <div class="bg-white/10 rounded-lg p-4 text-center">
-              <div class="text-2xl font-bold text-white" id="totalCredits">0</div>
-              <div class="text-[var(--muted)]">Total Credits</div>
-            </div>
-            <div class="bg-white/10 rounded-lg p-4 text-center">
-              <div class="text-2xl font-bold text-white" id="totalSemesters">0</div>
-              <div class="text-[var(--muted)]">Semesters</div>
-            </div>
+          <div>
+            <div class="muted mb8">Prev Credits</div>
+            <input id="prevCredits" value="0" />
+          </div>
+          <div>
+            <div class="muted mb8">Goal CGPA</div>
+            <input id="goalCGPA" value="9" />
           </div>
         </div>
-
-        <div id="semestersContainer"></div>
+        <button id="btnPlan" class="btn primary mt8">Plan Goal</button>
       </div>
-    </main>
-  </div>
-
-  <div id="addStudentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
-    <div class="glass-effect rounded-xl p-6 w-full max-w-md">
-      <h3 class="text-xl font-bold text-white mb-4">Add New Student</h3>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-white text-sm font-medium mb-2">Student Name</label>
-          <input type="text" id="newStudentName" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Enter student name">
-        </div>
-        <div class="flex space-x-4">
-          <button onclick="addStudent()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition duration-300">Add Student</button>
-          <button onclick="hideAddStudent()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition duration-300">Cancel</button>
-        </div>
+      <div class="glass card">
+        <div style="font-weight:700" class="mb8">Analytics</div>
+        <div id="analytics" style="white-space:pre-wrap; font-family:ui-monospace,Consolas,monaco; font-size:13px; line-height:1.35; max-height:220px; overflow:auto"></div>
       </div>
     </div>
-  </div>
 
-  <div id="analyticsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
-    <div class="glass-effect rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-bold text-white">📈 Student Analytics</h3>
-        <button onclick="hideAnalytics()" class="text-white hover:text-gray-300 text-2xl">×</button>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white/10 rounded-lg p-4">
-          <h4 class="text-lg font-semibold text-white mb-4">SGPA Trend</h4>
-          <canvas id="sgpaChart" width="400" height="300"></canvas>
-        </div>
-
-        <div class="bg-white/10 rounded-lg p-4">
-          <h4 class="text-lg font-semibold text-white mb-4">Subject Performance</h4>
-          <canvas id="subjectChart" width="400" height="300"></canvas>
+    <!-- Semesters -->
+    <div class="glass card mb16">
+      <div class="row" style="justify-content:space-between">
+        <div style="font-weight:800">Semesters</div>
+        <div class="right">
+          <button id="btnAddSem" class="btn">+ Add Semester</button>
+          <button id="btnChartsAll" class="btn">Open Charts (all)</button>
         </div>
       </div>
+      <div id="semesters"></div>
     </div>
   </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===========================
+   Helpers (hash, storage, csv)
+   =========================== */
+const SALT = 'sgpa_app_salt_v1';
+const DBKEY = 'sgpa_web_db_v1';    // { users:{u:{pwdHash}}, students:{id:StudentRecord} }
+const AUTOSAVE = '__autosave__';    // in case user didn't save to a name
 
-  <script>
-    // ===== Supabase Config (optional) =====
-    const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubWRzdG96cnp4Zmd1bGZrZG9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTg2MTgsImV4cCI6MjA3NDczNDYxOH0.NaV-B-kMGB9wWnhB8fzUGg7zh3KXZqCSJSVSNYZ4ZwU";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sha256 = async (text) => {
+  const data = new TextEncoder().encode(SALT + text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+};
 
-    // ===== Global state =====
-    let currentUserEmail = null;
-    let currentUserId = null;
-    let currentStudent = null;
-    let studentsData = {};
+const loadDB = () => {
+  try {
+    const raw = localStorage.getItem(DBKEY);
+    if (!raw) return { users:{}, students:{} };
+    const db = JSON.parse(raw);
+    db.users ||= {}; db.students ||= {};
+    return db;
+  } catch { return { users:{}, students:{} }; }
+};
+const saveDB = (db) => localStorage.setItem(DBKEY, JSON.stringify(db));
 
-    // ===== Startup =====
-    document.addEventListener('DOMContentLoaded', async function() {
-      // Try to restore cloud user; if none, just use local data and let user press "Skip"
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          currentUserEmail = user.email;
-          currentUserId = user.id;
-          await loadFromCloud();
-          showMainApp();
-        } else {
-          loadData(); // local
-        }
-      } catch (e) {
-        console.error(e);
-        loadData();
-      }
+const downloadFile = (name, content, type='text/plain') => {
+  const blob = new Blob([content], {type});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), {href:url, download:name});
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+};
 
-      document.getElementById('studentSelect').onchange = function() {
-        if (this.value) loadStudent(this.value); else hideStudentPanel();
+const toCSVRow = (arr) => arr.map(v => {
+  const s = String(v ?? '');
+  return /[,"\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+}).join(',');
+
+/* ===========================
+   Domain types & math
+   =========================== */
+const SEE_DIV = 2, GRADE_DIV = 10, SEM_PER_YEAR = 2;
+
+const cie = (s) => s.mse1 + s.mse2 + s.task1 + s.task2 + s.task3;
+const seeScaled = (s) => s.see / SEE_DIV;
+const finalMarks = (s) => Math.max(0, cie(s) + seeScaled(s));
+const gradePoint = (s) => finalMarks(s) / GRADE_DIV;
+
+const sgpa = (subjects) => {
+  const inc = subjects.filter(s => s.included);
+  const totCredits = inc.reduce((a,b)=>a + Number(b.credits||0), 0);
+  if (!totCredits) return 0;
+  const qp = inc.reduce((a,b)=> a + gradePoint(b)*(b.credits||0), 0);
+  return qp / totCredits;
+};
+
+const pearson = (x,y) => {
+  if (x.length !== y.length || x.length<2) return 0;
+  const n = x.length;
+  const mx = x.reduce((a,b)=>a+b,0)/n, my = y.reduce((a,b)=>a+b,0)/n;
+  let num = 0, denx=0, deny=0;
+  for (let i=0;i<n;i++){
+    const dx=x[i]-mx, dy=y[i]-my;
+    num += dx*dy; denx += dx*dx; deny += dy*dy;
+  }
+  const denom = Math.sqrt(denx)*Math.sqrt(deny);
+  return denom ? num/denom : 0;
+};
+const linReg = (x,y) => {
+  const n = x.length; if (n<2) return {m:0,b: y.reduce((a,b)=>a+b,0)/n || 0};
+  const mx = x.reduce((a,b)=>a+b,0)/n, my = y.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for (let i=0;i<n;i++){ num += (x[i]-mx)*(y[i]-my); den += (x[i]-mx)**2; }
+  const m = den ? num/den : 0; const b = my - m*mx; return {m,b};
+};
+
+/* ===========================
+   App state
+   =========================== */
+let currentUser = null;   // username or "GUEST"
+let currentStudent = null; // name/id string
+let students = {};        // { [name]: StudentRecord }
+let charts = [];          // keep Chart.js instances to destroy as needed
+
+// StudentRecord: { username, created, prevCGPA, prevCredits, semesters: [ [Subject] ] }
+const blankSubject = (name='Subject') => ({
+  name, mse1:0,mse2:0, task1:0,task2:0,task3:0, see:0, credits:3, included:true
+});
+const blankStudent = (username='__new__') => ({
+  username, created: new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[ [blankSubject()] ]
+});
+
+/* ===========================
+   UI wiring
+   =========================== */
+const $ = (id)=>document.getElementById(id);
+
+// Panels
+const authPanel = $('authPanel');
+const appPanel  = $('app');
+
+// Auth controls
+$('btnRegister').onclick = async () => {
+  const u = $('regUser').value.trim(); const p = $('regPass').value;
+  if(!u||!p) return alert('Enter username & password');
+  const db = loadDB();
+  if (db.users[u]) return alert('User exists');
+  db.users[u] = { pwdHash: await sha256(p) };
+  db.students[u] ||= blankStudent(u);
+  saveDB(db);
+  alert('Registered. You can login now.');
+};
+
+$('btnLogin').onclick = async () => {
+  const u = $('logUser').value.trim(); const p = $('logPass').value;
+  const db = loadDB();
+  if (!db.users[u]) return alert('Unknown user');
+  const ok = (await sha256(p)) === db.users[u].pwdHash;
+  if (!ok) return alert('Wrong password');
+  currentUser = u;
+  students = db.students;
+  if (!students[u]) students[u] = blankStudent(u);
+  currentStudent = u;
+  startApp();
+};
+
+$('btnGuest').onclick = () => {
+  currentUser = 'GUEST';
+  const db = loadDB(); students = db.students || {};
+  if (!students[AUTOSAVE]) students[AUTOSAVE] = blankStudent('guest');
+  currentStudent = AUTOSAVE;
+  startApp();
+};
+
+// App top buttons
+$('btnLogout').onclick = () => { persist(); appPanel.classList.add('hide'); authPanel.classList.remove('hide'); };
+$('btnNewStudent').onclick = () => {
+  const name = prompt('Enter new student id / name:'); if(!name) return;
+  if (students[name]) return alert('Student already exists');
+  students[name] = blankStudent(name);
+  currentStudent = name;
+  renderStudentsList(); renderAll();
+};
+$('btnSaveStudent').onclick = () => {
+  const name = prompt('Save as (id):', currentStudent || '');
+  if (!name) return;
+  // Clone current and put under name
+  const cur = students[currentStudent];
+  students[name] = JSON.parse(JSON.stringify(cur));
+  students[name].username = name;
+  currentStudent = name;
+  alert('Saved.');
+  renderStudentsList();
+};
+$('btnLoadStudent').onclick = () => {
+  const names = Object.keys(students);
+  if (!names.length) return alert('No students found');
+  const name = prompt('Enter student id to load:\n' + names.join(', '));
+  if (!name || !students[name]) return alert('Not found');
+  currentStudent = name; renderAll();
+};
+
+$('btnExportStudent').onclick = () => {
+  const rec = students[currentStudent];
+  if (!rec) return alert('No student selected');
+  downloadFile(`${rec.username}.json`, JSON.stringify(rec, null, 2), 'application/json');
+};
+$('importJson').onchange = (e) => {
+  const f = e.target.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rec = JSON.parse(reader.result);
+      if(!rec || !rec.username || !rec.semesters) throw new Error('Invalid');
+      students[rec.username] = rec; currentStudent = rec.username; renderStudentsList(); renderAll();
+      alert('Imported.');
+    } catch { alert('Invalid JSON'); }
+  };
+  reader.readAsText(f);
+};
+$('btnExportAll').onclick = () => {
+  const rows = [['Semester','Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']];
+  const rec = students[currentStudent]; if (!rec) return;
+  rec.semesters.forEach((sem, i) => {
+    sem.forEach(s => rows.push([
+      i+1, s.included?'Yes':'No', s.name, s.mse1, s.mse2, s.task1, s.task2, s.task3,
+      cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits
+    ]));
+  });
+  const csv = rows.map(toCSVRow).join('\n');
+  downloadFile(`${rec.username}-all.csv`, csv, 'text/csv');
+};
+
+$('btnPlan').onclick = () => planGoal();
+$('btnAddSem').onclick = () => { const rec = students[currentStudent]; rec.semesters.push([blankSubject()]); renderAll(); };
+$('btnChartsAll').onclick = () => openAllCharts();
+
+/* ===========================
+   App boot / render
+   =========================== */
+function startApp(){
+  authPanel.classList.add('hide');
+  appPanel.classList.remove('hide');
+  renderStudentsList();
+  renderAll();
+}
+function renderStudentsList(){
+  const sel = $('studentSelect');
+  sel.innerHTML = '';
+  Object.keys(students).forEach(k=>{
+    const o = document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o);
+  });
+  sel.value = currentStudent || '';
+  sel.onchange = ()=>{ currentStudent = sel.value; renderAll(); };
+}
+function renderAll(){
+  // destroy old charts
+  charts.forEach(c => { try{ c.destroy(); }catch{} });
+  charts = [];
+
+  const rec = students[currentStudent]; if (!rec) return;
+  // top badges
+  $('who').textContent = `Welcome, ${currentUser || 'Guest'}`;
+  $('prevCGPA').value = rec.prevCGPA ?? 0;
+  $('prevCredits').value = rec.prevCredits ?? 0;
+
+  // semesters DOM
+  const host = $('semesters'); host.innerHTML = '';
+  rec.semesters.forEach((sem, idx) => host.appendChild(renderSemester(sem, idx)));
+
+  // overview + CGPA badges
+  updateCGPAWidgets();
+  drawOverview();
+  persist();
+}
+
+function renderSemester(sem, semIndex){
+  const card = document.createElement('div'); card.className='card mt24';
+  const header = document.createElement('div'); header.className='row'; header.style.justifyContent='space-between';
+  const hLeft = document.createElement('div'); hLeft.innerHTML = `<b>Semester ${semIndex+1}</b> <span class="status" id="sgpa-${semIndex}">SGPA: ${sgpa(sem).toFixed(3)}</span>`;
+  const hRight = document.createElement('div'); hRight.className='right';
+  const btnAdd = Object.assign(document.createElement('button'), {className:'btn', textContent:'+ Subject'});
+  const btnCSV = Object.assign(document.createElement('button'), {className:'btn', textContent:'Export CSV'});
+  const btnCharts = Object.assign(document.createElement('button'), {className:'btn', textContent:'Open Charts'});
+  hRight.append(btnAdd, btnCSV, btnCharts); header.append(hLeft,hRight);
+
+  const table = document.createElement('table');
+  table.innerHTML = `
+    <thead><tr>
+      <th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th>
+      <th>Task3</th><th>SEE</th><th>Credits</th><th>GP</th><th>Action</th>
+    </tr></thead>
+    <tbody id="tbody-${semIndex}"></tbody>`;
+  card.append(header, table);
+
+  const tbody = table.querySelector('tbody');
+  const renderRows = () => {
+    tbody.innerHTML = '';
+    sem.forEach((s, subIndex) => {
+      const tr = document.createElement('tr');
+
+      const tdInc = document.createElement('td');
+      const inc = Object.assign(document.createElement('input'), {type:'checkbox', checked:!!s.included});
+      inc.onchange = ()=>{ s.included = inc.checked; refresh(); };
+      tdInc.appendChild(inc);
+
+      const mkNum = (val, min=0, max=100, step='0.5', cb) => {
+        const i = Object.assign(document.createElement('input'), {type:'number', value:val, min, max, step, style:'width:84px'});
+        i.oninput = ()=>{ cb(parseFloat(i.value)||0); refresh(); };
+        i.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); }};
+        return i;
       };
+      const mkTxt = (val, cb) => {
+        const i = Object.assign(document.createElement('input'), {value:val, style:'width:180px'});
+        i.oninput = ()=>{ cb(i.value); persist(); };
+        i.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); }};
+        return i;
+      };
+
+      const cells = [
+        tdInc,
+        mkCell(mkTxt(s.name, v=>s.name=v)),
+        mkCell(mkNum(s.mse1,0,20,'0.5', v=>s.mse1=v)),
+        mkCell(mkNum(s.mse2,0,20,'0.5', v=>s.mse2=v)),
+        mkCell(mkNum(s.task1,0,4,'0.5',  v=>s.task1=v)),
+        mkCell(mkNum(s.task2,0,4,'0.5',  v=>s.task2=v)),
+        mkCell(mkNum(s.task3,0,2,'0.5',  v=>s.task3=v)),
+        mkCell(mkNum(s.see,0,100,'1',   v=>s.see=v)),
+        mkCell(mkNum(s.credits,1,30,'1',v=>s.credits=v)),
+        mkCell(() => {
+          const div = document.createElement('div');
+          const gp = gradePoint(s);
+          div.textContent = gp.toFixed(2);
+          div.style.fontWeight='700';
+          div.style.color = gp>=9 ? 'var(--green)' : gp>=7 ? '#e5e557' : 'var(--red)';
+          return div;
+        }()),
+        mkCell(()=>{
+          const b = Object.assign(document.createElement('button'), {className:'btn danger', textContent:'Remove'});
+          b.onclick= ()=>{ if(confirm(`Remove ${s.name}?`)){ sem.splice(subIndex,1); refresh(); } };
+          return b;
+        }())
+      ];
+      cells.forEach(c=>tr.appendChild(c));
+      tbody.appendChild(tr);
     });
+  };
 
-    // ===== Local cache =====
-    function loadData() {
-      const data = localStorage.getItem('sgpaAppData');
-      if (data) {
-        const parsed = JSON.parse(data);
-        studentsData = parsed.students || {};
-      }
-    }
-    function saveData() {
-      localStorage.setItem('sgpaAppData', JSON.stringify({ students: studentsData }));
-      scheduleCloudSync();
-    }
+  const mkCell = (el) => { const td=document.createElement('td'); td.appendChild(el); return td; };
+  const refresh = () => {
+    renderRows();
+    document.getElementById(`sgpa-${semIndex}`).textContent = `SGPA: ${sgpa(sem).toFixed(3)}`;
+    updateCGPAWidgets(); drawOverview(); persist();
+  };
 
-    // ===== Export / Import =====
-    function exportData() {
-      const data = { app: { students: studentsData } };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'sgpa-backup.json'; a.click();
-      URL.revokeObjectURL(url);
-    }
-    function importData(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const data = JSON.parse(reader.result);
-          if (data.app && data.app.students) {
-            studentsData = data.app.students;
-            saveData();
-            loadStudentsList();
-            alert('Import successful!');
-          } else { alert('Invalid backup file.'); }
-        } catch { alert('Invalid backup file.'); }
-      };
-      reader.readAsText(file);
-    }
+  btnAdd.onclick = ()=>{ sem.push(blankSubject(`Subject ${sem.length+1}`)); refresh(); };
+  btnCSV.onclick = ()=>{
+    const rows = [['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']];
+    sem.forEach(s => rows.push([
+      s.included?'Yes':'No', s.name, s.mse1, s.mse2, s.task1, s.task2, s.task3,
+      cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits
+    ]));
+    const csv = rows.map(toCSVRow).join('\n');
+    downloadFile(`${students[currentStudent].username}-sem${semIndex+1}.csv`, csv, 'text/csv');
+  };
+  btnCharts.onclick = ()=> openChartsForSemester(sem, `Semester ${semIndex+1}`);
 
-    // ===== Supabase cloud sync =====
-    let cloudSyncTimer = null;
-    async function loadFromCloud() {
-      if (!currentUserId) return;
-      const { data, error } = await supabase
-        .from('student_data')
-        .select('data')
-        .eq('user_id', currentUserId)
-        .maybeSingle();
+  renderRows();
+  return card;
+}
 
-      if (error) { console.error('Cloud load failed:', error.message); loadData(); return; }
-      if (data && data.data) {
-        studentsData = data.data.students || {};
-      } else {
-        studentsData = {};
-        await supabase.from('student_data').upsert({
-          user_id: currentUserId, data: { students: {} }
-        }, { onConflict: 'user_id' });
-      }
-      localStorage.setItem('sgpaAppData', JSON.stringify({ students: studentsData }));
-    }
-    function scheduleCloudSync() {
-      clearTimeout(cloudSyncTimer);
-      cloudSyncTimer = setTimeout(syncToCloud, 500);
-    }
-    async function syncToCloud() {
-      if (!currentUserId) return;
-      const payload = { students: studentsData };
-      const { error } = await supabase
-        .from('student_data')
-        .upsert({ user_id: currentUserId, data: payload, updated_at: new Date().toISOString() },
-                { onConflict: 'user_id' });
-      if (error) console.error('Cloud sync failed:', error.message);
-    }
+function updateCGPAWidgets(){
+  const rec = students[currentStudent]; if(!rec) return;
+  const prevC = Number($('prevCredits').value)||0;
+  const prevG = Number($('prevCGPA').value)||0;
+  rec.prevCredits = prevC; rec.prevCGPA = prevG;
 
-    // ===== Auth (optional) =====
-    async function login() {
-      const username = document.getElementById('loginUsername').value.trim();
-      const password = document.getElementById('loginPassword').value;
-      if (!username || !password) { alert('Please enter both email and password'); return; }
+  let curQP=0, curCredits=0;
+  rec.semesters.forEach(sem=>{
+    sem.filter(s=>s.included).forEach(s=>{
+      curQP += gradePoint(s)* (s.credits||0);
+      curCredits += (s.credits||0);
+    });
+  });
+  const totalCredits = prevC + curCredits;
+  const totalQP = prevG*prevC + curQP;
+  const CGPA = totalCredits ? (totalQP/totalCredits) : 0;
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
-      if (error) { alert('Login failed: ' + error.message); return; }
+  $('cgpaBadge').textContent = `CGPA: ${CGPA.toFixed(2)}`;
+  $('credBadge').textContent = `Credits: ${totalCredits}`;
+}
 
-      const { user } = data;
-      currentUserEmail = user.email; currentUserId = user.id;
-      await loadFromCloud();
-      showMainApp();
-    }
-    async function register() {
-      const username = document.getElementById('regUsername').value.trim();
-      const password = document.getElementById('regPassword').value;
-      if (!username || !password) { alert('Please enter both email and password'); return; }
+function drawOverview(){
+  const rec = students[currentStudent]; if(!rec) return;
+  const ctx = $('overviewChart').getContext('2d');
+  // destroy previous instance on this canvas if any
+  const existing = charts.find(c => c.ctx && c.ctx.canvas === ctx.canvas);
+  if (existing) { try{ existing.destroy(); }catch{} charts = charts.filter(c => c!==existing); }
 
-      const { data, error } = await supabase.auth.signUp({ email: username, password });
-      if (error) { alert('Sign up failed: ' + error.message); return; }
+  const prevC = rec.prevCredits||0, prevG = rec.prevCGPA||0;
+  const semSgpas = [];
+  const semCredits = [];
+  rec.semesters.forEach(sem=>{
+    const inc = sem.filter(s=>s.included);
+    const cred = inc.reduce((a,b)=>a+(b.credits||0),0);
+    const qp = inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0);
+    semSgpas.push(cred? qp/cred : 0);
+    semCredits.push(cred);
+  });
+  const cum = [];
+  let tq = prevG*prevC, tc = prevC;
+  semSgpas.forEach((s,i)=>{ tq += s*semCredits[i]; tc += semCredits[i]; cum.push(tc? tq/tc : 0); });
 
-      const user = data.user;
-      if (user) {
-        await supabase.from('student_data').upsert({ user_id: user.id, data: { students: {} } },
-                                                   { onConflict: 'user_id' });
-      }
-      alert('Account created! Please verify email if required, then log in.');
-      showLogin();
-    }
-    async function logout() {
-      await supabase.auth.signOut();
-      currentUserEmail = null; currentUserId = null; currentStudent = null;
-      showLogin();
-    }
+  const chart = new Chart(ctx, {
+    type:'line',
+    data:{ labels: cum.map((_,i)=>`Sem ${i+1}`), datasets:[
+      { label:'Cumulative CGPA', data:cum, fill:false, tension:.3 }
+    ]},
+    options:{ responsive:true, scales:{y:{min:0,max:10}} }
+  });
+  charts.push(chart);
+}
 
-    // ===== Screen navigation =====
-    function showLogin() {
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('registerScreen').classList.add('hidden');
-      document.getElementById('mainApp').classList.add('hidden');
-    }
-    function skipAuth() {
-      // go straight to app without any password
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('registerScreen').classList.add('hidden');
-      document.getElementById('mainApp').classList.remove('hidden');
-      document.getElementById('currentUser').textContent = `Welcome, ${currentUserEmail || 'Guest'}`;
-      loadStudentsList();
-    }
-    function showRegister() {
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('registerScreen').classList.remove('hidden');
-      document.getElementById('mainApp').classList.add('hidden');
-    }
-    function showMainApp() {
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('registerScreen').classList.add('hidden');
-      document.getElementById('mainApp').classList.remove('hidden');
-      document.getElementById('currentUser').textContent = `Welcome, ${currentUserEmail || 'Guest'}`;
-      loadStudentsList();
-    }
+function openChartsForSemester(sem, title='Semester'){
+  const win = window.open('','_blank','width=1100,height=700');
+  win.document.write(`
+    <title>${title} Charts</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"><\/script>
+    <div style="padding:16px; font-family:Inter,system-ui; background:#0b0f14; color:#e9f2ff">
+      <div style="font-weight:800; margin-bottom:12px; color:#00ffe5">${title} — Analytics</div>
+      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px">
+        <canvas id="c1" height="260"></canvas>
+        <canvas id="c2" height="260"></canvas>
+        <canvas id="c3" height="260"></canvas>
+        <canvas id="c4" height="260"></canvas>
+        <canvas id="c5" height="260"></canvas>
+        <canvas id="c6" height="260"></canvas>
+      </div>
+    </div>
+  `);
+  const names = sem.map(s=>s.name);
+  const finals = sem.map(s=>finalMarks(s));
+  const included = sem.map(s=>!!s.included);
+  const cies = sem.map(s=>cie(s));
+  const sees = sem.map(s=>s.see);
+  const mse1s = sem.map(s=>s.mse1);
+  const mse2s = sem.map(s=>s.mse2);
+  const tasks = sem.map(s=>s.task1 + s.task2 + s.task3);
+  const seeContrib = sem.map(s=>seeScaled(s));
+  const finalsInc = finals.filter((_,i)=>included[i]);
+  const namesInc  = names.filter((_,i)=>included[i]);
 
-    // ===== Student management =====
-    function loadStudentsList() {
-      const select = document.getElementById('studentSelect');
-      select.innerHTML = '<option value="">Select Student</option>';
-      const userStudents = studentsData || {};
-      Object.keys(userStudents).forEach(studentName => {
-        const option = document.createElement('option');
-        option.value = studentName; option.textContent = studentName;
-        select.appendChild(option);
-      });
-    }
-    function showAddStudent(){ document.getElementById('addStudentModal').classList.remove('hidden'); }
-    function hideAddStudent(){
-      document.getElementById('addStudentModal').classList.add('hidden');
-      document.getElementById('newStudentName').value = '';
-    }
-    function addStudent() {
-      const name = document.getElementById('newStudentName').value.trim();
-      if (!name) { alert('Please enter student name'); return; }
-      if (!studentsData) studentsData = {};
-      if (studentsData[name]) { alert('Student already exists'); return; }
-      studentsData[name] = { name, created: new Date().toISOString(), semesters: [], prevCGPA: 0, prevCredits: 0 };
-      saveData(); loadStudentsList(); hideAddStudent();
-      document.getElementById('studentSelect').value = name; loadStudent(name);
-    }
-    function loadStudent(studentName) {
-      currentStudent = studentName;
-      const student = studentsData[studentName];
-      document.getElementById('studentName').textContent = studentName;
-      document.getElementById('studentPanel').classList.remove('hidden');
-      renderSemesters(student); updateCGPADisplay(student);
-    }
-    function hideStudentPanel(){ document.getElementById('studentPanel').classList.add('hidden'); currentStudent = null; }
+  const w = win; const make = (id,config)=> new w.Chart(w.document.getElementById(id).getContext('2d'), config);
 
-    // ===== Semester / Subject management =====
-    function addSemester() {
-      if (!currentStudent) return;
-      const student = studentsData[currentStudent];
-      const semesterNum = student.semesters.length + 1;
-      const newSemester = {
-        number: semesterNum,
-        subjects: [ createSubject('Subject 1'), createSubject('Subject 2'),
-                    createSubject('Subject 3'), createSubject('Subject 4'), createSubject('Subject 5') ]
-      };
-      student.semesters.push(newSemester);
-      saveData(); renderSemesters(student); updateCGPADisplay(student);
-    }
-    function createSubject(name) { return { name, mse1:0,mse2:0, task1:0,task2:0,task3:0, see:0, credits:3, included:true }; }
-    function renderSemesters(student) {
-      const container = document.getElementById('semestersContainer'); container.innerHTML = '';
-      student.semesters.forEach((semester, semIndex) => {
-        const semesterDiv = document.createElement('div');
-        semesterDiv.className = 'glass-effect rounded-xl p-6 mb-6 card-hover';
-        const sgpa = calculateSGPA(semester.subjects);
-        semesterDiv.innerHTML = `
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-white">Semester ${semester.number}</h3>
-            <div class="flex items-center space-x-4">
-              <span class="text-lg font-semibold text-white">SGPA: ${sgpa.toFixed(2)}</span>
-              <button onclick="addSubject(${semIndex})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded transition duration-300">+ Subject</button>
-            </div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-white">
-              <thead>
-                <tr class="border-b border-white/20">
-                  <th class="text-left py-2">Subject</th>
-                  <th class="text-center py-2">MSE1</th>
-                  <th class="text-center py-2">MSE2</th>
-                  <th class="text-center py-2">Task1</th>
-                  <th class="text-center py-2">Task2</th>
-                  <th class="text-center py-2">Task3</th>
-                  <th class="text-center py-2">SEE</th>
-                  <th class="text-center py-2">Credits</th>
-                  <th class="text-center py-2">Grade</th>
-                  <th class="text-center py-2">Action</th>
-                </tr>
-              </thead>
-              <tbody id="semester-${semIndex}-subjects"></tbody>
-            </table>
-          </div>`;
-        container.appendChild(semesterDiv);
-        renderSubjects(semester.subjects, semIndex);
-      });
-    }
-    function renderSubjects(subjects, semIndex) {
-      const tbody = document.getElementById(`semester-${semIndex}-subjects`); tbody.innerHTML = '';
-      subjects.forEach((subject, subIndex) => {
-        const cie = subject.mse1 + subject.mse2 + subject.task1 + subject.task2 + subject.task3;
-        const seeScaled = subject.see / 2;
-        const finalMarks = Math.max(0, cie + seeScaled);
-        const gradePoint = finalMarks / 10;
-        const row = document.createElement('tr');
-        row.className = 'border-b border-white/10';
-        row.innerHTML = `
-          <td class="py-2"><input type="text" value="${subject.name}"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'name', this.value)"
-              class="bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.mse1}" min="0" max="20" step="0.5"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'mse1', parseFloat(this.value) || 0)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.mse2}" min="0" max="20" step="0.5"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'mse2', parseFloat(this.value) || 0)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.task1}" min="0" max="4" step="0.5"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'task1', parseFloat(this.value) || 0)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.task2}" min="0" max="4" step="0.5"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'task2', parseFloat(this.value) || 0)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.task3}" min="0" max="2" step="0.5"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'task3', parseFloat(this.value) || 0)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.see}" min="0" max="100" step="1"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'see', parseFloat(this.value) || 0)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.credits}" min="1" max="6" step="1"
-              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'credits', parseFloat(this.value) || 3)"
-              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
-          <td class="text-center py-2 font-semibold ${gradePoint >= 9 ? 'text-green-400' : gradePoint >= 7 ? 'text-yellow-400' : 'text-red-400'}">${gradePoint.toFixed(2)}</td>
-          <td class="text-center py-2"><button onclick="removeSubject(${semIndex}, ${subIndex})"
-              class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm transition duration-300">Remove</button></td>`;
-        tbody.appendChild(row);
-      });
-    }
-    function updateSubjectField(semIndex, subIndex, field, value) {
-      const student = studentsData[currentStudent];
-      student.semesters[semIndex].subjects[subIndex][field] = value;
-      saveData(); renderSemesters(student); updateCGPADisplay(student);
-    }
-    function addSubject(semIndex) {
-      const student = studentsData[currentStudent];
-      const subjectCount = student.semesters[semIndex].subjects.length + 1;
-      student.semesters[semIndex].subjects.push(createSubject(`Subject ${subjectCount}`));
-      saveData(); renderSemesters(student); updateCGPADisplay(student);
-    }
-    function removeSubject(semIndex, subIndex) {
-      const student = studentsData[currentStudent];
-      student.semesters[semIndex].subjects.splice(subIndex, 1);
-      saveData(); renderSemesters(student); updateCGPADisplay(student);
-    }
+  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals, tension:.3}]},options:{scales:{y:{min:0,max:100}}}});
+  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{scales:{y:{min:0,max:100}}}});
+  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]}});
+  make('c4',{type:'bar', data:{labels:names, datasets:[
+      {label:'MSE1', data:mse1s}, {label:'MSE2', data:mse2s}, {label:'Tasks', data:tasks}, {label:'SEE/2', data:seeContrib}
+  ]}, options:{scales:{y:{stacked:true}}});
+  make('c5',{type:'histogram'}); // Chart.js has no built-in histogram; fake via bar
+  // simple histogram
+  const bins = Math.min(10, Math.max(2, finals.length));
+  const min = 0, max = 100, width = (max-min)/bins;
+  const counts = new Array(bins).fill(0);
+  finals.forEach(v => { const idx = Math.min(bins-1, Math.max(0, Math.floor((v-min)/width))); counts[idx]++; });
+  const labels = counts.map((_,i)=>`${Math.round(min+i*width)}-${Math.round(min+(i+1)*width)}`);
+  make('c5',{type:'bar', data:{labels, datasets:[{label:'Distribution', data:counts}]}});
 
-    // ===== Calculations =====
-    function calculateSGPA(subjects) {
-      let totalGradePoints = 0, totalCredits = 0;
-      subjects.forEach(subject => {
-        if (subject.included) {
-          const cie = subject.mse1 + subject.mse2 + subject.task1 + subject.task2 + subject.task3;
-          const seeScaled = subject.see / 2;
-          const finalMarks = Math.max(0, cie + seeScaled);
-          const gradePoint = finalMarks / 10;
-          totalGradePoints += gradePoint * subject.credits;
-          totalCredits += subject.credits;
-        }
-      });
-      return totalCredits > 0 ? totalGradePoints / totalCredits : 0;
-    }
-    function calculateCGPA(student) {
-      let totalGradePoints = student.prevCGPA * student.prevCredits;
-      let totalCredits = student.prevCredits;
-      student.semesters.forEach(semester => {
-        const sgpa = calculateSGPA(semester.subjects);
-        const semesterCredits = semester.subjects.reduce((s,sub)=> sub.included? s+sub.credits : s, 0);
-        totalGradePoints += sgpa * semesterCredits; totalCredits += semesterCredits;
-      });
-      return totalCredits > 0 ? totalGradePoints / totalCredits : 0;
-    }
-    function updateCGPADisplay(student) {
-      const cgpa = calculateCGPA(student);
-      const totalCredits = student.prevCredits + student.semesters.reduce((sum, sem) =>
-        sum + sem.subjects.reduce((subSum, subject) => subject.included ? subSum + subject.credits : subSum, 0), 0);
-      document.getElementById('currentCGPA').textContent = cgpa.toFixed(2);
-      document.getElementById('totalCredits').textContent = totalCredits;
-      document.getElementById('totalSemesters').textContent = student.semesters.length;
-    }
+  // scatter CIE vs SEE + regression
+  const reg = linReg(cies, sees);
+  const xs = [Math.min(...cies,0), Math.max(...cies,100)];
+  const ys = xs.map(x=>reg.m*x+reg.b);
+  make('c6',{type:'scatter', data:{
+      datasets:[
+        {label:'CIE vs SEE', data: cies.map((x,i)=>({x, y:sees[i]}))},
+        {label:'Regression', data: xs.map((x,i)=>({x,y:ys[i]})), type:'line'}
+      ]
+    }, options:{scales:{x:{title:{text:'CIE', display:true}}, y:{title:{text:'SEE', display:true}}}}
+  );
 
-    // ===== Analytics =====
-    function showAnalytics() {
-      if (!currentStudent) return;
-      document.getElementById('analyticsModal').classList.remove('hidden');
-      setTimeout(() => { renderSGPAChart(); renderSubjectChart(); }, 100);
-    }
-    function hideAnalytics(){ document.getElementById('analyticsModal').classList.add('hidden'); }
-    function renderSGPAChart() {
-      const student = studentsData[currentStudent];
-      const ctx = document.getElementById('sgpaChart').getContext('2d');
-      const labels = student.semesters.map((_, i)=>`Sem ${i+1}`);
-      const data = student.semesters.map(sem => calculateSGPA(sem.subjects));
-      new Chart(ctx,{
-        type:'line',
-        data:{ labels, datasets:[{ label:'SGPA', data,
-          borderColor:'rgb(59,130,246)', backgroundColor:'rgba(59,130,246,0.1)', tension:0.4, fill:true }]},
-        options:{ responsive:true, plugins:{ legend:{ labels:{ color:'white' } } },
-          scales:{ y:{ beginAtZero:true, max:10, ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } },
-                   x:{ ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } } } });
-    }
-    function renderSubjectChart() {
-      const student = studentsData[currentStudent];
-      const ctx = document.getElementById('subjectChart').getContext('2d');
-      if (student.semesters.length === 0) return;
-      const latest = student.semesters[student.semesters.length - 1];
-      const labels = latest.subjects.map(s=>s.name);
-      const data = latest.subjects.map(s=>{
-        const cie = s.mse1+s.mse2+s.task1+s.task2+s.task3; const seeScaled=s.see/2;
-        return Math.max(0, cie+seeScaled)/10;
-      });
-      new Chart(ctx,{
-        type:'bar',
-        data:{ labels, datasets:[{ label:'Grade Points', data,
-          backgroundColor:'rgba(34,197,94,0.8)', borderColor:'rgb(34,197,94)', borderWidth:1 }]},
-        options:{ responsive:true, plugins:{ legend:{ labels:{ color:'white' } } },
-          scales:{ y:{ beginAtZero:true, max:10, ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } },
-                   x:{ ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } } } });
-    }
-  </script>
+  // quick text correlation
+  const r = pearson(cies, sees).toFixed(3);
+  w.document.title = `${title} — r=${r}`;
+}
+
+function openAllCharts(){
+  const rec = students[currentStudent]; if(!rec) return;
+  rec.semesters.forEach((sem, i)=> openChartsForSemester(sem, `Semester ${i+1}`));
+}
+
+/* ===========================
+   Goal Planner & Analytics
+   =========================== */
+function planGoal(){
+  const rec = students[currentStudent]; if(!rec) return;
+  const prevCGPA = Number($('prevCGPA').value)||0;
+  const prevCredits = Number($('prevCredits').value)||0;
+  const goal = Number($('goalCGPA').value)||0;
+
+  const incSubs = rec.semesters.flatMap(sem => sem.filter(s=>s.included));
+  const curQP = incSubs.reduce((a,s)=>a+gradePoint(s)*(s.credits||0),0);
+  const curCreds = incSubs.reduce((a,s)=>a+(s.credits||0),0);
+
+  const totalCredits = prevCredits + curCreds;
+  const requiredTotalQP = goal * totalCredits;
+  const requiredFromCurrent = requiredTotalQP - prevCGPA*prevCredits;
+
+  const txt = [];
+  if (requiredFromCurrent <= curQP){
+    txt.push('Goal already met with current marks.');
+  } else {
+    const remain = requiredFromCurrent - curQP;
+    const needGP = curCreds ? (curQP + remain)/curCreds : 0;
+    txt.push(`Uniform required GP across current subjects: ${needGP.toFixed(3)}${needGP>10?' (⚠ >10 impossible)':''}`);
+    txt.push('');
+    incSubs.forEach(s=>{
+      const reqFinal = Math.min(10, needGP) * GRADE_DIV;
+      const neededSEEraw = Math.max(0, reqFinal - cie(s)) * SEE_DIV;
+      const needSEE = neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0;
+      txt.push(`${s.name}: current GP ${gradePoint(s).toFixed(3)} → need final ${reqFinal.toFixed(2)} ; SEE needed: ${needSEE.toFixed(2)} ; Achievable: ${needGP<=10}`);
+    });
+  }
+  $('analytics').textContent = `Goal planner summary:\nGoal CGPA: ${goal}, Prev CGPA: ${prevCGPA} / ${prevCredits} cr\n\n` + txt.join('\n');
+}
+
+/* ===========================
+   Persistence
+   =========================== */
+function persist(){
+  const db = loadDB();
+  db.students = students;
+  // keep autosave mirror for guest
+  if (currentStudent && students[currentStudent]) {
+    db.students[AUTOSAVE] = JSON.parse(JSON.stringify(students[currentStudent]));
+  }
+  saveDB(db);
+}
+window.addEventListener('beforeunload', persist);
+</script>
 </body>
 </html>
+
