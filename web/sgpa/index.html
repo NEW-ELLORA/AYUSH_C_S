@@ -4,96 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SGPA/CGPA Calculator</title>
-
-  <!-- Chart.js + Tailwind (as in original) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- ===== Neon/Dark theme to match your site ===== -->
   <style>
     :root{
-      --bg:#0b0f14;          /* deep dark */
-      --panel:#0f1620;       /* card bg */
-      --aqua:#00ffe5;        /* neon aqua */
-      --violet:#b784ff;      /* neon violet */
-      --text:#e8f1ff;
-      --muted:#9fb3c8;
+      --bg:#0b0f14; --panel:#0f1620; --aqua:#00ffe5; --violet:#b784ff; --text:#e8f1ff; --muted:#9fb3c8;
     }
     html,body{height:100%}
     body{
-      box-sizing:border-box;
-      margin:0;
-      color:var(--text);
+      box-sizing:border-box;margin:0;color:var(--text);
       background: radial-gradient(1200px 600px at -10% 10%, rgba(0,255,229,0.08), transparent 60%),
                   radial-gradient(900px 500px at 110% 0%, rgba(183,132,255,0.08), transparent 60%),
                   linear-gradient(180deg, #06090d, #0b0f14 30%, #0b0f14 100%);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     }
-    /* Glass panels reused from your original but retinted */
-    .glass-effect{
-      background: rgba(15,22,32,0.75);
-      border: 1px solid rgba(0,255,229,0.18);
-      box-shadow: 0 0 40px rgba(0,255,229,0.05), inset 0 0 40px rgba(183,132,255,0.05);
-      backdrop-filter: blur(8px);
-    }
+    .glass-effect{background:rgba(15,22,32,0.75);border:1px solid rgba(0,255,229,0.18);box-shadow:0 0 40px rgba(0,255,229,0.05), inset 0 0 40px rgba(183,132,255,0.05);backdrop-filter:blur(8px);}
     .card-hover{transition: all .3s ease;}
     .card-hover:hover{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
-    .neon-title{
-      text-shadow: 0 0 10px rgba(0,255,229,.6), 0 0 30px rgba(183,132,255,.35);
-      color: var(--aqua);
-      letter-spacing: .03em;
-    }
-    .gradient-border{
-      border:1px solid rgba(0,255,229,0.25);
-      box-shadow: 0 0 20px rgba(0,255,229,0.08), inset 0 0 20px rgba(183,132,255,0.08);
-    }
-    .btn-primary{
-      background: linear-gradient(90deg, #2563eb, #7c3aed);
-      border:1px solid rgba(124,58,237,.45);
-    }
+    .neon-title{ text-shadow: 0 0 10px rgba(0,255,229,.6), 0 0 30px rgba(183,132,255,.35); color: var(--aqua); letter-spacing:.03em; }
+    .gradient-border{ border:1px solid rgba(0,255,229,0.25); box-shadow:0 0 20px rgba(0,255,229,0.08), inset 0 0 20px rgba(183,132,255,0.08); }
+    .btn-primary{ background: linear-gradient(90deg, #2563eb, #7c3aed); border:1px solid rgba(124,58,237,.45); }
     .btn-primary:hover{ filter: brightness(1.05); }
-    .btn-ghost{
-      background: transparent;
-      border:1px solid rgba(0,255,229,0.25);
-    }
-    /* ===== Edge launcher (if you want to reuse here too) ===== */
-    .edge-launcher{
-      position: fixed; left: 0; top: 40%;
-      transform: translateY(-50%);
-      width: 44px; height: 48px;
-      background: rgba(15,22,32,0.9);
-      border-right: 1px solid rgba(0,255,229,0.25);
-      border-top-right-radius: 10px; border-bottom-right-radius:10px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-      overflow: hidden; cursor: pointer; z-index: 50;
-      transition: width .25s ease;
-    }
+    .btn-ghost{ background: transparent; border:1px solid rgba(0,255,229,0.25); }
+    .edge-launcher{ position: fixed; left: 0; top: 40%; transform: translateY(-50%); width: 44px; height: 48px; background: rgba(15,22,32,0.9); border-right: 1px solid rgba(0,255,229,0.25); border-top-right-radius: 10px; border-bottom-right-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); overflow: hidden; cursor: pointer; z-index: 50; transition: width .25s ease; }
     .edge-launcher:hover{ width: 220px; }
-    .edge-launcher .row{
-      display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .75rem;
-      color:var(--text);
-    }
-    .edge-dot{
-      width:10px; height:10px; border-radius:50%;
-      box-shadow: 0 0 10px var(--aqua), 0 0 20px var(--aqua);
-      background: var(--aqua);
-    }
+    .edge-launcher .row{ display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .75rem; color:var(--text); }
+    .edge-dot{ width:10px; height:10px; border-radius:50%; box-shadow: 0 0 10px var(--aqua), 0 0 20px var(--aqua); background: var(--aqua); }
     .edge-label{ opacity: .92; font-weight:600; }
-    /* ===== Overlays for security ===== */
-    .overlay{
-      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background: radial-gradient(600px 400px at 50% -10%, rgba(0,255,229,0.06), transparent 60%),
-                  rgba(6,9,13,0.85);
-      z-index: 100;
-    }
+    .overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: radial-gradient(600px 400px at 50% -10%, rgba(0,255,229,0.06), transparent 60%), rgba(6,9,13,0.85); z-index: 100; }
     .hidden{ display:none !important; }
     input::placeholder{ color:#8aa0b8; }
   </style>
 </head>
-
 <body class="min-h-screen">
 
-  <!-- Optional: edge-launcher inside SGPA (links back to dashboard) -->
   <a class="edge-launcher" href="../dashboard.html" title="Back to Dashboard">
     <div class="row">
       <span class="edge-dot"></span>
@@ -101,7 +45,7 @@
     </div>
   </a>
 
-  <!-- ===== Overlay A: Site gate (must be logged-in to the main site) ===== -->
+  <!-- Overlay A: Site gate -->
   <div id="siteGate" class="overlay">
     <div class="glass-effect rounded-2xl p-8 w-[95%] max-w-md gradient-border">
       <h2 class="text-2xl font-bold neon-title mb-3">Locked Area</h2>
@@ -110,33 +54,29 @@
       </p>
       <div class="flex gap-3">
         <a href="../index.html" class="btn-ghost px-4 py-2 rounded-lg">Go to Login</a>
-        <button onclick="checkSiteSession(true)" class="btn-primary px-4 py-2 rounded-lg text-white">I’m Logged In</button>
+        <button onclick="sessionStorage.setItem('siteAuthed','1');checkSiteSession(true)" class="btn-primary px-4 py-2 rounded-lg text-white">I’m Logged In</button>
       </div>
     </div>
   </div>
 
-  <!-- ===== Overlay B: Extra password just for this page ===== -->
+  <!-- Overlay B: Extra password -->
   <div id="sgpaExtraLock" class="overlay hidden">
     <div class="glass-effect rounded-2xl p-8 w-[95%] max-w-md gradient-border">
       <h2 class="text-2xl font-bold neon-title mb-3">SGPA Access</h2>
-      <p class="text-[15px] text-[var(--muted)] mb-4">
-        Enter the additional passphrase to open the SGPA tool.
-      </p>
+      <p class="text-[15px] text-[var(--muted)] mb-4">Enter the additional passphrase to open the SGPA tool.</p>
       <div class="space-y-4">
         <input id="extraPass" type="password" placeholder="Enter passphrase"
                class="w-full px-4 py-3 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400">
         <div class="flex gap-3">
           <button onclick="unlockExtra()" class="btn-primary px-4 py-2 rounded-lg text-white">Unlock</button>
-          <button onclick="location.href='../dashboard.html'"
-                  class="btn-ghost px-4 py-2 rounded-lg">Cancel</button>
+          <button onclick="location.href='../dashboard.html'" class="btn-ghost px-4 py-2 rounded-lg">Cancel</button>
         </div>
         <div id="extraErr" class="text-red-400 text-sm"></div>
       </div>
     </div>
   </div>
 
-  <!-- ===== The ORIGINAL SGPA APP (unchanged logic; only style tint) ===== -->
-  <!-- Login Screen -->
+  <!-- ORIGINAL SGPA APP (UI) -->
   <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
       <div class="text-center mb-8">
@@ -166,7 +106,6 @@
     </div>
   </div>
 
-  <!-- Register Screen -->
   <div id="registerScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
       <div class="text-center mb-8">
@@ -196,9 +135,7 @@
     </div>
   </div>
 
-  <!-- Main App -->
   <div id="mainApp" class="hidden min-h-screen">
-    <!-- Header -->
     <header class="glass-effect gradient-border p-4">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -207,9 +144,7 @@
         </div>
 
         <div class="flex items-center space-x-2">
-          <button onclick="exportData()" class="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-lg transition border border-white/15">
-            ⬇️ Export
-          </button>
+          <button onclick="exportData()" class="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-lg transition border border-white/15">⬇️ Export</button>
           <label class="bg-white/5 hover:bg-white/10 text-white px-3 py-2 rounded-lg transition border border-white/15 cursor-pointer">
             ⬆️ Import
             <input type="file" accept="application/json" onchange="importData(event)" class="hidden">
@@ -218,34 +153,23 @@
           <select id="studentSelect" class="ml-2 px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400">
             <option value="">Select Student</option>
           </select>
-          <button onclick="showAddStudent()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-300">
-            + Add Student
-          </button>
-          <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300">
-            Logout
-          </button>
+          <button onclick="showAddStudent()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-300">+ Add Student</button>
+          <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300">Logout</button>
         </div>
       </div>
     </header>
 
-    <!-- Main Content -->
     <main class="max-w-7xl mx-auto p-6">
-      <!-- Student Info Panel -->
       <div id="studentPanel" class="hidden">
         <div class="glass-effect rounded-xl p-6 mb-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold text-white">Student: <span id="studentName"></span></h2>
             <div class="flex space-x-2">
-              <button onclick="addSemester()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300">
-                + Add Semester
-              </button>
-              <button onclick="showAnalytics()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition duration-300">
-                📈 Analytics
-              </button>
+              <button onclick="addSemester()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300">+ Add Semester</button>
+              <button onclick="showAnalytics()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition duration-300">📈 Analytics</button>
             </div>
           </div>
 
-          <!-- CGPA Display -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="bg-white/10 rounded-lg p-4 text-center">
               <div class="text-2xl font-bold text-white" id="currentCGPA">0.00</div>
@@ -262,13 +186,11 @@
           </div>
         </div>
 
-        <!-- Semesters -->
         <div id="semestersContainer"></div>
       </div>
     </main>
   </div>
 
-  <!-- Add Student Modal -->
   <div id="addStudentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-xl p-6 w-full max-w-md">
       <h3 class="text-xl font-bold text-white mb-4">Add New Student</h3>
@@ -278,18 +200,13 @@
           <input type="text" id="newStudentName" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Enter student name">
         </div>
         <div class="flex space-x-4">
-          <button onclick="addStudent()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition duration-300">
-            Add Student
-          </button>
-          <button onclick="hideAddStudent()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition duration-300">
-            Cancel
-          </button>
+          <button onclick="addStudent()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition duration-300">Add Student</button>
+          <button onclick="hideAddStudent()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition duration-300">Cancel</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Analytics Modal -->
   <div id="analyticsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
@@ -311,33 +228,39 @@
     </div>
   </div>
 
-  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- === ORIGINAL APP LOGIC (kept) + small additions for gates === -->
   <script>
     /* ---------------- Gatekeeping (site session + extra password) ---------------- */
-    // Change this if your main site uses a different session flag:
-    const SITE_SESSION_KEY = 'siteAuthed';      // set to "1" after main-site login
-    const SGPA_EXTRA_PASSWORD = '12345'; // second password for this page
-    const EXTRA_OK_KEY = 'sgpaExtraOk';         // session key once extra pass is verified
+    const SITE_SESSION_KEY = 'siteAuthed';
+    const ALT_SESSION_KEY  = 'isAuthenticated'; // accept main-login key too
+    const SGPA_EXTRA_PASSWORD = 'CHANGE_ME_Secret#123';
+    const EXTRA_OK_KEY = 'sgpaExtraOk';
+
+    function siteIsOk(){
+      return sessionStorage.getItem(SITE_SESSION_KEY) === '1'
+          || sessionStorage.getItem(ALT_SESSION_KEY) === 'true';
+    }
 
     function checkSiteSession(manual){
-      const ok = sessionStorage.getItem(SITE_SESSION_KEY) === '1';
-      if(ok){
+      if(siteIsOk()){
         document.getElementById('siteGate').classList.add('hidden');
-        // Only ask extra password once per session
         if(sessionStorage.getItem(EXTRA_OK_KEY)==='1'){
           document.getElementById('sgpaExtraLock').classList.add('hidden');
-          // show app login/register
           document.getElementById('loginScreen').classList.remove('hidden');
         }else{
           document.getElementById('sgpaExtraLock').classList.remove('hidden');
         }
       }else{
-        if(manual) alert('Still not seeing your login. Make sure you opened the main site and logged in.');
+        // If opened from the dashboard (same origin), auto-ack site session
+        if (document.referrer && document.referrer.includes(location.host)) {
+          sessionStorage.setItem(SITE_SESSION_KEY,'1');
+          return checkSiteSession();
+        }
+        if(manual){ /* optional toast */ }
       }
     }
+
     function unlockExtra(){
       const p = document.getElementById('extraPass').value;
       if(p === SGPA_EXTRA_PASSWORD){
@@ -350,22 +273,20 @@
     }
   </script>
 
-  <!-- App Logic (unchanged core, only minor tint + gate calls) -->
   <script>
-    // ===== Supabase Config (replace with your project values) =====
+    // ===== Supabase Config (replace) =====
     const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubWRzdG96cnp4Zmd1bGZrZG9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTg2MTgsImV4cCI6MjA3NDczNDYxOH0.NaV-B-kMGB9wWnhB8fzUGg7zh3KXZqCSJSVSNYZ4ZwU";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ===== Global state =====
-    let currentUserEmail = null;  // display in UI
-    let currentUserId = null;     // for RLS
-    let currentStudent = null;    // selected student name
-    let studentsData = {};        // { "Alice": {...}, "Bob": {...} }
+    let currentUserEmail = null;
+    let currentUserId = null;
+    let currentStudent = null;
+    let studentsData = {};
 
     // ===== Startup =====
     document.addEventListener('DOMContentLoaded', async function() {
-      // Gate 1: site session must be present
       checkSiteSession(false);
 
       try {
@@ -375,7 +296,6 @@
           currentUserId = user.id;
           await loadFromCloud();
           showMainApp();
-          // If already authed, hide overlays
           document.getElementById('siteGate').classList.add('hidden');
           if(sessionStorage.getItem(EXTRA_OK_KEY)!=='1'){
             document.getElementById('sgpaExtraLock').classList.remove('hidden');
@@ -383,11 +303,10 @@
             document.getElementById('sgpaExtraLock').classList.add('hidden');
           }
         } else {
-          loadData(); // local cache
+          loadData();
         }
       } catch (e) {
-        console.error(e);
-        loadData();
+        console.error(e); loadData();
       }
 
       document.getElementById('studentSelect').onchange = function() {
@@ -405,7 +324,7 @@
     }
     function saveData() {
       localStorage.setItem('sgpaAppData', JSON.stringify({ students: studentsData }));
-      scheduleCloudSync(); // also sync to Supabase when logged in
+      scheduleCloudSync();
     }
 
     // ===== Export / Import =====
@@ -518,8 +437,7 @@
       document.getElementById('mainApp').classList.add('hidden');
     }
     function showMainApp() {
-      // double-check gates
-      if(sessionStorage.getItem(SITE_SESSION_KEY)!=='1' || sessionStorage.getItem(EXTRA_OK_KEY)!=='1'){
+      if(!siteIsOk() || sessionStorage.getItem(EXTRA_OK_KEY)!=='1'){
         document.getElementById('mainApp').classList.add('hidden');
         document.getElementById('siteGate').classList.remove('hidden');
         return;
@@ -748,3 +666,4 @@
   </script>
 </body>
 </html>
+
