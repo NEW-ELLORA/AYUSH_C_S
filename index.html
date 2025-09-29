@@ -250,18 +250,10 @@
 
     <script>
         // =================================================================================
-        //                                  START OF UPDATE
-        // =================================================================================
-        
-        // ADDED: CHECK IF USER IS ALREADY LOGGED IN
-        // This runs immediately. If the 'isAuthenticated' key exists, it redirects
-        // to the dashboard without showing the login page at all.
+        // ADDED: auto-redirect if already authenticated
         if (sessionStorage.getItem('isAuthenticated') === 'true') {
             window.location.replace('dashboard.html');
         }
-        
-        // =================================================================================
-        //                                   END OF UPDATE
         // =================================================================================
 
         /* --------------------------- Page lifecycle & UI hooks --------------------------- */
@@ -285,12 +277,12 @@
         /* Main Login Function */
         const handleLogin = () => {
             if (passwordInput.value === correctPassword) {
-                // Set a key in sessionStorage to prove authentication
+                // Set keys in sessionStorage to prove authentication
                 sessionStorage.setItem('isAuthenticated', 'true');
+                sessionStorage.setItem('siteAuthed','1'); // ADDED: grant SGPA page access too
                 showWelcome();
                 // Redirect after welcome animation
                 setTimeout(() => {
-                    // UPDATED: Changed .href to .replace() for better security
                     window.location.replace(redirectURL);
                 }, 1500);
             } else {
@@ -393,3 +385,4 @@
     </script>
 </body>
 </html>
+
