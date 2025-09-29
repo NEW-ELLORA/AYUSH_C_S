@@ -25,6 +25,7 @@
     .gradient-border{ border:1px solid rgba(0,255,229,0.25); box-shadow:0 0 20px rgba(0,255,229,0.08), inset 0 0 20px rgba(183,132,255,0.08); }
     .btn-primary{ background: linear-gradient(90deg, #2563eb, #7c3aed); border:1px solid rgba(124,58,237,.45); }
     .btn-primary:hover{ filter: brightness(1.05); }
+    .btn-ghost{ background: transparent; border:1px solid rgba(0,255,229,0.25); }
     .edge-launcher{ position: fixed; left: 0; top: 40%; transform: translateY(-50%); width: 44px; height: 48px; background: rgba(15,22,32,0.9); border-right: 1px solid rgba(0,255,229,0.25); border-top-right-radius: 10px; border-bottom-right-radius:10px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); overflow: hidden; cursor: pointer; z-index: 50; transition: width .25s ease; }
     .edge-launcher:hover{ width: 220px; }
     .edge-launcher .row{ display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .75rem; color:var(--text); }
@@ -33,14 +34,7 @@
     input::placeholder{ color:#8aa0b8; }
   </style>
 </head>
-<body class="min-h-screen">
-
-  <!-- 🔐 Security Gate -->
-  <script>
-    if (sessionStorage.getItem('isAuthenticated') !== 'true') {
-      window.location.replace('../index.html'); // redirect if not logged in
-    }
-  </script>
+<body class="min-h-screen" onload="if(sessionStorage.getItem('isAuthenticated')!=='true'){window.location.replace('../index.html')}">
 
   <!-- Edge launcher back to dashboard -->
   <a class="edge-launcher" href="../dashboard.html" title="Back to Dashboard">
@@ -50,13 +44,78 @@
     </div>
   </a>
 
+  <!-- (REMOVED all password overlays/gates) -->
+
+  <!-- Original SGPA App: Login/Register (kept; optional for cloud sync) -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold neon-title mb-2">📊 SGPA Calculator</h1>
+        <p class="text-[var(--muted)]">Multi-student analytics platform</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-white text-sm font-medium mb-2">Email</label>
+          <input type="email" id="loginUsername" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Enter email">
+        </div>
+
+        <div>
+          <label class="block text-white text-sm font-medium mb-2">Password</label>
+          <input type="password" id="loginPassword" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Enter password">
+        </div>
+
+        <button onclick="login()" class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+          Login (for cloud sync)
+        </button>
+
+        <button onclick="showRegister()" class="w-full bg-transparent border border-white/25 hover:border-white/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+          Create Account
+        </button>
+
+        <button onclick="skipAuth()" class="mt-2 w-full btn-ghost text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+          Skip & use local data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="registerScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
+    <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold neon-title mb-2">Create Account</h1>
+        <p class="text-[var(--muted)]">Optional — enables cloud backup</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-white text-sm font-medium mb-2">Email</label>
+          <input type="email" id="regUsername" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="you@example.com">
+        </div>
+
+        <div>
+          <label class="block text-white text-sm font-medium mb-2">Password</label>
+          <input type="password" id="regPassword" class="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="Choose password">
+        </div>
+
+        <button onclick="register()" class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+          Create Account
+        </button>
+
+        <button onclick="showLogin()" class="w-full bg-transparent border border-white/25 hover:border-white/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+          Back to Login
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main App -->
-  <div id="mainApp" class="min-h-screen">
+  <div id="mainApp" class="hidden min-h-screen">
     <header class="glass-effect gradient-border p-4">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center space-x-4">
           <h1 class="text-2xl font-bold neon-title">📊 SGPA Calculator</h1>
-          <span id="currentUser" class="text-[var(--muted)]">Welcome</span>
+          <span id="currentUser" class="text-[var(--muted)]"></span>
         </div>
 
         <div class="flex items-center space-x-2">
@@ -70,6 +129,7 @@
             <option value="">Select Student</option>
           </select>
           <button onclick="showAddStudent()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-300">+ Add Student</button>
+          <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-300">Logout</button>
         </div>
       </div>
     </header>
@@ -106,7 +166,6 @@
     </main>
   </div>
 
-  <!-- Add Student Modal -->
   <div id="addStudentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-xl p-6 w-full max-w-md">
       <h3 class="text-xl font-bold text-white mb-4">Add New Student</h3>
@@ -123,7 +182,6 @@
     </div>
   </div>
 
-  <!-- Analytics Modal -->
   <div id="analyticsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
@@ -145,15 +203,38 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
-    // ===== Local state =====
+    // ===== Supabase Config (optional) =====
+    const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubWRzdG96cnp4Zmd1bGZrZG9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTg2MTgsImV4cCI6MjA3NDczNDYxOH0.NaV-B-kMGB9wWnhB8fzUGg7zh3KXZqCSJSVSNYZ4ZwU";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ===== Global state =====
+    let currentUserEmail = null;
+    let currentUserId = null;
     let currentStudent = null;
     let studentsData = {};
 
     // ===== Startup =====
-    document.addEventListener('DOMContentLoaded', function() {
-      loadData();
-      loadStudentsList();
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Try to restore cloud user; if none, just use local data and let user press "Skip"
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          currentUserEmail = user.email;
+          currentUserId = user.id;
+          await loadFromCloud();
+          showMainApp();
+        } else {
+          loadData(); // local
+        }
+      } catch (e) {
+        console.error(e);
+        loadData();
+      }
+
       document.getElementById('studentSelect').onchange = function() {
         if (this.value) loadStudent(this.value); else hideStudentPanel();
       };
@@ -169,6 +250,7 @@
     }
     function saveData() {
       localStorage.setItem('sgpaAppData', JSON.stringify({ students: studentsData }));
+      scheduleCloudSync();
     }
 
     // ===== Export / Import =====
@@ -198,11 +280,110 @@
       reader.readAsText(file);
     }
 
+    // ===== Supabase cloud sync =====
+    let cloudSyncTimer = null;
+    async function loadFromCloud() {
+      if (!currentUserId) return;
+      const { data, error } = await supabase
+        .from('student_data')
+        .select('data')
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+
+      if (error) { console.error('Cloud load failed:', error.message); loadData(); return; }
+      if (data && data.data) {
+        studentsData = data.data.students || {};
+      } else {
+        studentsData = {};
+        await supabase.from('student_data').upsert({
+          user_id: currentUserId, data: { students: {} }
+        }, { onConflict: 'user_id' });
+      }
+      localStorage.setItem('sgpaAppData', JSON.stringify({ students: studentsData }));
+    }
+    function scheduleCloudSync() {
+      clearTimeout(cloudSyncTimer);
+      cloudSyncTimer = setTimeout(syncToCloud, 500);
+    }
+    async function syncToCloud() {
+      if (!currentUserId) return;
+      const payload = { students: studentsData };
+      const { error } = await supabase
+        .from('student_data')
+        .upsert({ user_id: currentUserId, data: payload, updated_at: new Date().toISOString() },
+                { onConflict: 'user_id' });
+      if (error) console.error('Cloud sync failed:', error.message);
+    }
+
+    // ===== Auth (optional) =====
+    async function login() {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!username || !password) { alert('Please enter both email and password'); return; }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
+      if (error) { alert('Login failed: ' + error.message); return; }
+
+      const { user } = data;
+      currentUserEmail = user.email; currentUserId = user.id;
+      await loadFromCloud();
+      showMainApp();
+    }
+    async function register() {
+      const username = document.getElementById('regUsername').value.trim();
+      const password = document.getElementById('regPassword').value;
+      if (!username || !password) { alert('Please enter both email and password'); return; }
+
+      const { data, error } = await supabase.auth.signUp({ email: username, password });
+      if (error) { alert('Sign up failed: ' + error.message); return; }
+
+      const user = data.user;
+      if (user) {
+        await supabase.from('student_data').upsert({ user_id: user.id, data: { students: {} } },
+                                                   { onConflict: 'user_id' });
+      }
+      alert('Account created! Please verify email if required, then log in.');
+      showLogin();
+    }
+    async function logout() {
+      await supabase.auth.signOut();
+      currentUserEmail = null; currentUserId = null; currentStudent = null;
+      showLogin();
+    }
+
+    // ===== Screen navigation =====
+    function showLogin() {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('registerScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+    }
+    function skipAuth() {
+      // go straight to app without any password
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('registerScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('currentUser').textContent = `Welcome, ${currentUserEmail || 'Guest'}`;
+      loadStudentsList();
+    }
+    function showRegister() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('registerScreen').classList.remove('hidden');
+      document.getElementById('mainApp').classList.add('hidden');
+    }
+    function showMainApp() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('registerScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('currentUser').textContent = `Welcome, ${currentUserEmail || 'Guest'}`;
+      loadStudentsList();
+    }
+
     // ===== Student management =====
     function loadStudentsList() {
       const select = document.getElementById('studentSelect');
       select.innerHTML = '<option value="">Select Student</option>';
-      Object.keys(studentsData).forEach(studentName => {
+      const userStudents = studentsData || {};
+      Object.keys(userStudents).forEach(studentName => {
         const option = document.createElement('option');
         option.value = studentName; option.textContent = studentName;
         select.appendChild(option);
@@ -216,6 +397,7 @@
     function addStudent() {
       const name = document.getElementById('newStudentName').value.trim();
       if (!name) { alert('Please enter student name'); return; }
+      if (!studentsData) studentsData = {};
       if (studentsData[name]) { alert('Student already exists'); return; }
       studentsData[name] = { name, created: new Date().toISOString(), semesters: [], prevCGPA: 0, prevCredits: 0 };
       saveData(); loadStudentsList(); hideAddStudent();
@@ -294,4 +476,122 @@
           <td class="py-2"><input type="text" value="${subject.name}"
               onchange="updateSubjectField(${semIndex}, ${subIndex}, 'name', this.value)"
               class="bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400"></td>
-          <td class="text-center py-2"><input type="number" value="${subject.mse1}" min="0" max="20"
+          <td class="text-center py-2"><input type="number" value="${subject.mse1}" min="0" max="20" step="0.5"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'mse1', parseFloat(this.value) || 0)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2"><input type="number" value="${subject.mse2}" min="0" max="20" step="0.5"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'mse2', parseFloat(this.value) || 0)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2"><input type="number" value="${subject.task1}" min="0" max="4" step="0.5"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'task1', parseFloat(this.value) || 0)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2"><input type="number" value="${subject.task2}" min="0" max="4" step="0.5"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'task2', parseFloat(this.value) || 0)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2"><input type="number" value="${subject.task3}" min="0" max="2" step="0.5"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'task3', parseFloat(this.value) || 0)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2"><input type="number" value="${subject.see}" min="0" max="100" step="1"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'see', parseFloat(this.value) || 0)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2"><input type="number" value="${subject.credits}" min="1" max="6" step="1"
+              onchange="updateSubjectField(${semIndex}, ${subIndex}, 'credits', parseFloat(this.value) || 3)"
+              class="w-16 bg-white/10 text-white px-2 py-1 rounded border border-white/20 focus:outline-none focus:ring-1 focus:ring-cyan-400 text-center"></td>
+          <td class="text-center py-2 font-semibold ${gradePoint >= 9 ? 'text-green-400' : gradePoint >= 7 ? 'text-yellow-400' : 'text-red-400'}">${gradePoint.toFixed(2)}</td>
+          <td class="text-center py-2"><button onclick="removeSubject(${semIndex}, ${subIndex})"
+              class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm transition duration-300">Remove</button></td>`;
+        tbody.appendChild(row);
+      });
+    }
+    function updateSubjectField(semIndex, subIndex, field, value) {
+      const student = studentsData[currentStudent];
+      student.semesters[semIndex].subjects[subIndex][field] = value;
+      saveData(); renderSemesters(student); updateCGPADisplay(student);
+    }
+    function addSubject(semIndex) {
+      const student = studentsData[currentStudent];
+      const subjectCount = student.semesters[semIndex].subjects.length + 1;
+      student.semesters[semIndex].subjects.push(createSubject(`Subject ${subjectCount}`));
+      saveData(); renderSemesters(student); updateCGPADisplay(student);
+    }
+    function removeSubject(semIndex, subIndex) {
+      const student = studentsData[currentStudent];
+      student.semesters[semIndex].subjects.splice(subIndex, 1);
+      saveData(); renderSemesters(student); updateCGPADisplay(student);
+    }
+
+    // ===== Calculations =====
+    function calculateSGPA(subjects) {
+      let totalGradePoints = 0, totalCredits = 0;
+      subjects.forEach(subject => {
+        if (subject.included) {
+          const cie = subject.mse1 + subject.mse2 + subject.task1 + subject.task2 + subject.task3;
+          const seeScaled = subject.see / 2;
+          const finalMarks = Math.max(0, cie + seeScaled);
+          const gradePoint = finalMarks / 10;
+          totalGradePoints += gradePoint * subject.credits;
+          totalCredits += subject.credits;
+        }
+      });
+      return totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+    }
+    function calculateCGPA(student) {
+      let totalGradePoints = student.prevCGPA * student.prevCredits;
+      let totalCredits = student.prevCredits;
+      student.semesters.forEach(semester => {
+        const sgpa = calculateSGPA(semester.subjects);
+        const semesterCredits = semester.subjects.reduce((s,sub)=> sub.included? s+sub.credits : s, 0);
+        totalGradePoints += sgpa * semesterCredits; totalCredits += semesterCredits;
+      });
+      return totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+    }
+    function updateCGPADisplay(student) {
+      const cgpa = calculateCGPA(student);
+      const totalCredits = student.prevCredits + student.semesters.reduce((sum, sem) =>
+        sum + sem.subjects.reduce((subSum, subject) => subject.included ? subSum + subject.credits : subSum, 0), 0);
+      document.getElementById('currentCGPA').textContent = cgpa.toFixed(2);
+      document.getElementById('totalCredits').textContent = totalCredits;
+      document.getElementById('totalSemesters').textContent = student.semesters.length;
+    }
+
+    // ===== Analytics =====
+    function showAnalytics() {
+      if (!currentStudent) return;
+      document.getElementById('analyticsModal').classList.remove('hidden');
+      setTimeout(() => { renderSGPAChart(); renderSubjectChart(); }, 100);
+    }
+    function hideAnalytics(){ document.getElementById('analyticsModal').classList.add('hidden'); }
+    function renderSGPAChart() {
+      const student = studentsData[currentStudent];
+      const ctx = document.getElementById('sgpaChart').getContext('2d');
+      const labels = student.semesters.map((_, i)=>`Sem ${i+1}`);
+      const data = student.semesters.map(sem => calculateSGPA(sem.subjects));
+      new Chart(ctx,{
+        type:'line',
+        data:{ labels, datasets:[{ label:'SGPA', data,
+          borderColor:'rgb(59,130,246)', backgroundColor:'rgba(59,130,246,0.1)', tension:0.4, fill:true }]},
+        options:{ responsive:true, plugins:{ legend:{ labels:{ color:'white' } } },
+          scales:{ y:{ beginAtZero:true, max:10, ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } },
+                   x:{ ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } } } });
+    }
+    function renderSubjectChart() {
+      const student = studentsData[currentStudent];
+      const ctx = document.getElementById('subjectChart').getContext('2d');
+      if (student.semesters.length === 0) return;
+      const latest = student.semesters[student.semesters.length - 1];
+      const labels = latest.subjects.map(s=>s.name);
+      const data = latest.subjects.map(s=>{
+        const cie = s.mse1+s.mse2+s.task1+s.task2+s.task3; const seeScaled=s.see/2;
+        return Math.max(0, cie+seeScaled)/10;
+      });
+      new Chart(ctx,{
+        type:'bar',
+        data:{ labels, datasets:[{ label:'Grade Points', data,
+          backgroundColor:'rgba(34,197,94,0.8)', borderColor:'rgb(34,197,94)', borderWidth:1 }]},
+        options:{ responsive:true, plugins:{ legend:{ labels:{ color:'white' } } },
+          scales:{ y:{ beginAtZero:true, max:10, ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } },
+                   x:{ ticks:{ color:'white' }, grid:{ color:'rgba(255,255,255,0.1)' } } } });
+    }
+  </script>
+</body>
+</html>
