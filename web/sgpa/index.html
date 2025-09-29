@@ -31,8 +31,6 @@
     .edge-launcher .row{ display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .75rem; color:var(--text); }
     .edge-dot{ width:10px; height:10px; border-radius:50%; box-shadow: 0 0 10px var(--aqua), 0 0 20px var(--aqua); background: var(--aqua); }
     .edge-label{ opacity: .92; font-weight:600; }
-    .overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: radial-gradient(600px 400px at 50% -10%, rgba(0,255,229,0.06), transparent 60%), rgba(6,9,13,0.85); z-index: 100; }
-    .hidden{ display:none !important; }
     input::placeholder{ color:#8aa0b8; }
   </style>
 </head>
@@ -46,39 +44,10 @@
     </div>
   </a>
 
-  <!-- Overlay A: Site gate (must pass main index password first) -->
-  <div id="siteGate" class="overlay">
-    <div class="glass-effect rounded-2xl p-8 w-[95%] max-w-md gradient-border">
-      <h2 class="text-2xl font-bold neon-title mb-3">Locked Area</h2>
-      <p class="text-[15px] text-[var(--muted)] mb-6">
-        Please login to the main site first. You’ll be redirected automatically.
-      </p>
-      <div class="flex gap-3">
-        <a href="../index.html" class="btn-ghost px-4 py-2 rounded-lg">Go to Login</a>
-        <button onclick="sessionStorage.setItem('siteAuthed','1'); localStorage.setItem('siteAuthed','1'); checkSiteSession(true)" class="btn-primary px-4 py-2 rounded-lg text-white">I’m Logged In</button>
-      </div>
-    </div>
-  </div>
+  <!-- (REMOVED all password overlays/gates) -->
 
-  <!-- Overlay B: Extra password (second gate just for SGPA) -->
-  <div id="sgpaExtraLock" class="overlay hidden">
-    <div class="glass-effect rounded-2xl p-8 w-[95%] max-w-md gradient-border">
-      <h2 class="text-2xl font-bold neon-title mb-3">SGPA Access</h2>
-      <p class="text-[15px] text-[var(--muted)] mb-4">Enter the additional passphrase to open the SGPA tool.</p>
-      <div class="space-y-4">
-        <input id="extraPass" type="password" placeholder="Enter passphrase"
-               class="w-full px-4 py-3 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400">
-        <div class="flex gap-3">
-          <button onclick="unlockExtra()" class="btn-primary px-4 py-2 rounded-lg text-white">Unlock</button>
-          <button onclick="location.href='../dashboard.html'" class="btn-ghost px-4 py-2 rounded-lg">Cancel</button>
-        </div>
-        <div id="extraErr" class="text-red-400 text-sm"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Original SGPA App: Login/Register -->
-  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
+  <!-- Original SGPA App: Login/Register (kept; optional for cloud sync) -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
     <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold neon-title mb-2">📊 SGPA Calculator</h1>
@@ -97,11 +66,15 @@
         </div>
 
         <button onclick="login()" class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-          Login
+          Login (for cloud sync)
         </button>
 
         <button onclick="showRegister()" class="w-full bg-transparent border border-white/25 hover:border-white/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
           Create Account
+        </button>
+
+        <button onclick="skipAuth()" class="mt-2 w-full btn-ghost text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
+          Skip & use local data
         </button>
       </div>
     </div>
@@ -111,7 +84,7 @@
     <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold neon-title mb-2">Create Account</h1>
-        <p class="text-[var(--muted)]">Join the SGPA platform</p>
+        <p class="text-[var(--muted)]">Optional — enables cloud backup</p>
       </div>
 
       <div class="space-y-4">
@@ -232,54 +205,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Gatekeeping (site session + extra password) -->
   <script>
-    // Main-site auth integration (reads flags set by your main index.html)
-    const SITE_SESSION_KEY='siteAuthed',ALT_SESSION_KEY='isAuthenticated',SGPA_EXTRA_PASSWORD='CHANGE_ME_Secret#123',EXTRA_OK_KEY='sgpaExtraOk';
-    function siteIsOk(){
-      return sessionStorage.getItem(SITE_SESSION_KEY)==='1'
-          || localStorage.getItem(SITE_SESSION_KEY)==='1'
-          || sessionStorage.getItem(ALT_SESSION_KEY)==='true'
-          || localStorage.getItem(ALT_SESSION_KEY)==='true';
-    }
-    function checkSiteSession(manual){
-      if(siteIsOk()){
-        document.getElementById('siteGate').classList.add('hidden');
-        if(sessionStorage.getItem(EXTRA_OK_KEY)==='1'){
-          document.getElementById('sgpaExtraLock').classList.add('hidden');
-          document.getElementById('loginScreen').classList.remove('hidden');
-        }else{
-          document.getElementById('sgpaExtraLock').classList.remove('hidden');
-        }
-      }else{
-        // If arriving from your domain, auto-set once (covers cases where the SGPA opened in same tab)
-        if (document.referrer && document.referrer.includes(location.host)) {
-          sessionStorage.setItem(SITE_SESSION_KEY,'1'); localStorage.setItem(SITE_SESSION_KEY,'1');
-          return checkSiteSession();
-        }
-        if(manual){ /* no-op */ }
-      }
-    }
-    function unlockExtra(){
-      const p=document.getElementById('extraPass').value;
-      if(p===SGPA_EXTRA_PASSWORD){
-        sessionStorage.setItem(EXTRA_OK_KEY,'1');
-        document.getElementById('extraErr').textContent='';
-        document.getElementById('sgpaExtraLock').classList.add('hidden');
-        document.getElementById('loginScreen').classList.remove('hidden');
-      }else{
-        document.getElementById('extraErr').textContent='Incorrect passphrase.';
-      }
-    }
-    // Enter key submits extra pass
-    document.addEventListener('DOMContentLoaded',function(){
-      const extraInput=document.getElementById('extraPass');
-      if(extraInput){ extraInput.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); unlockExtra(); } }); }
-    });
-  </script>
-
-  <script>
-    // ===== Supabase Config (replace) =====
+    // ===== Supabase Config (optional) =====
     const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
     const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -292,26 +219,20 @@
 
     // ===== Startup =====
     document.addEventListener('DOMContentLoaded', async function() {
-      checkSiteSession(false);
-
+      // Try to restore cloud user; if none, just use local data and let user press "Skip"
       try {
-        const { data: { user} } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           currentUserEmail = user.email;
           currentUserId = user.id;
           await loadFromCloud();
           showMainApp();
-          document.getElementById('siteGate').classList.add('hidden');
-          if(sessionStorage.getItem('sgpaExtraOk')!=='1'){
-            document.getElementById('sgpaExtraLock').classList.remove('hidden');
-          }else{
-            document.getElementById('sgpaExtraLock').classList.add('hidden');
-          }
         } else {
-          loadData();
+          loadData(); // local
         }
       } catch (e) {
-        console.error(e); loadData();
+        console.error(e);
+        loadData();
       }
 
       document.getElementById('studentSelect').onchange = function() {
@@ -394,7 +315,7 @@
       if (error) console.error('Cloud sync failed:', error.message);
     }
 
-    // ===== Auth =====
+    // ===== Auth (optional) =====
     async function login() {
       const username = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
@@ -436,17 +357,20 @@
       document.getElementById('registerScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.add('hidden');
     }
+    function skipAuth() {
+      // go straight to app without any password
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('registerScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('currentUser').textContent = `Welcome, ${currentUserEmail || 'Guest'}`;
+      loadStudentsList();
+    }
     function showRegister() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('registerScreen').classList.remove('hidden');
       document.getElementById('mainApp').classList.add('hidden');
     }
     function showMainApp() {
-      if(!siteIsOk() || sessionStorage.getItem('sgpaExtraOk')!=='1'){
-        document.getElementById('mainApp').classList.add('hidden');
-        document.getElementById('siteGate').classList.remove('hidden');
-        return;
-      }
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('registerScreen').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
