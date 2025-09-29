@@ -168,7 +168,7 @@
             .social-links { justify-content: center; }
         }
 
-        /* ===== Launcher stays hidden off-screen; appears when mouse touches far-left ===== */
+        /* ===== Launcher hidden until mouse touches far-left edge ===== */
         .sgpa-launcher{position:fixed;left:-240px;top:45%;transform:translateY(-50%);width:44px;height:48px;background:rgba(10,20,30,.95);border-right:1px solid rgba(0,245,212,.25);border-top-right-radius:10px;border-bottom-right-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.4);overflow:hidden;cursor:pointer;z-index:9999;transition:left .2s ease,width .25s ease;opacity:1;}
         body.edge-reveal .sgpa-launcher{left:0;}
         .sgpa-launcher:hover{width:230px;}
@@ -184,11 +184,11 @@
         if (sessionStorage.getItem('isAuthenticated') !== 'true') {
             document.body.classList.add('unauthorized'); // Ensure content stays hidden
             window.location.replace('index.html');      // Redirect unauthorized users
-        } else { sessionStorage.setItem('siteAuthed','1'); }
+        } else { sessionStorage.setItem('siteAuthed','1'); localStorage.setItem('siteAuthed','1'); }
     </script>
 
-    <!-- Pop-out launcher (hidden until mouse hits left edge). Update href if your path differs -->
-    <a class="sgpa-launcher" href="web/sgpa/index.html" onclick="sessionStorage.setItem('siteAuthed','1')">
+    <!-- Pop-out launcher -->
+    <a class="sgpa-launcher" href="web/sgpa/index.html" onclick="sessionStorage.setItem('siteAuthed','1'); localStorage.setItem('siteAuthed','1')">
       <div class="row"><span class="sgpa-dot"></span><span class="sgpa-label">Open SGPA</span></div>
     </a>
 
@@ -238,26 +238,17 @@
         </main>
     </div>
 
-    <!-- ADDED: edge reveal handler -->
+    <!-- Edge reveal handler + Logout (appended on same block to avoid adding new lines) -->
     <script>
-      document.addEventListener('mousemove', function(e){
-        if(e.clientX <= 6){ document.body.classList.add('edge-reveal'); }
-        else if(!document.querySelector('.sgpa-launcher:hover')){
-          document.body.classList.remove('edge-reveal');
-        }
-      });
+      document.addEventListener('mousemove',function(e){ if(e.clientX<=6){document.body.classList.add('edge-reveal');} else if(!document.querySelector('.sgpa-launcher:hover')){document.body.classList.remove('edge-reveal');}});
     </script>
-
-    <!-- Logout script -->
     <script>
         document.getElementById('logout-link').addEventListener('click', function(event) {
-            event.preventDefault();
-            sessionStorage.removeItem('isAuthenticated');
-            sessionStorage.removeItem('siteAuthed');
+            event.preventDefault(); 
+            sessionStorage.removeItem('isAuthenticated'); sessionStorage.removeItem('siteAuthed'); localStorage.removeItem('siteAuthed');
             window.location.replace('index.html');
         });
     </script>
 </body>
 </html>
-
 
