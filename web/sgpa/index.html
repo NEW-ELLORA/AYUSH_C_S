@@ -38,7 +38,7 @@
 </head>
 <body class="min-h-screen">
 
-  <!-- Edge launcher back to dashboard (optional) -->
+  <!-- Edge launcher back to dashboard -->
   <a class="edge-launcher" href="../dashboard.html" title="Back to Dashboard">
     <div class="row">
       <span class="edge-dot"></span>
@@ -46,7 +46,7 @@
     </div>
   </a>
 
-  <!-- Overlay A: Site gate (ensures main site login happened) -->
+  <!-- Overlay A: Site gate (must pass main index password first) -->
   <div id="siteGate" class="overlay">
     <div class="glass-effect rounded-2xl p-8 w-[95%] max-w-md gradient-border">
       <h2 class="text-2xl font-bold neon-title mb-3">Locked Area</h2>
@@ -60,7 +60,7 @@
     </div>
   </div>
 
-  <!-- Overlay B: Extra password (2nd layer) -->
+  <!-- Overlay B: Extra password (second gate just for SGPA) -->
   <div id="sgpaExtraLock" class="overlay hidden">
     <div class="glass-effect rounded-2xl p-8 w-[95%] max-w-md gradient-border">
       <h2 class="text-2xl font-bold neon-title mb-3">SGPA Access</h2>
@@ -77,7 +77,7 @@
     </div>
   </div>
 
-  <!-- Original App: Login/Register -->
+  <!-- Original SGPA App: Login/Register -->
   <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 hidden">
     <div class="glass-effect rounded-2xl p-8 w-full max-w-md">
       <div class="text-center mb-8">
@@ -210,7 +210,7 @@
   </div>
 
   <div id="analyticsModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
-    <div class="glass-effect rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+    <div class="glass-effect rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-2xl font-bold text-white">📈 Student Analytics</h3>
         <button onclick="hideAnalytics()" class="text-white hover:text-gray-300 text-2xl">×</button>
@@ -234,6 +234,7 @@
 
   <!-- Gatekeeping (site session + extra password) -->
   <script>
+    // Main-site auth integration (reads flags set by your main index.html)
     const SITE_SESSION_KEY='siteAuthed',ALT_SESSION_KEY='isAuthenticated',SGPA_EXTRA_PASSWORD='CHANGE_ME_Secret#123',EXTRA_OK_KEY='sgpaExtraOk';
     function siteIsOk(){
       return sessionStorage.getItem(SITE_SESSION_KEY)==='1'
@@ -251,11 +252,12 @@
           document.getElementById('sgpaExtraLock').classList.remove('hidden');
         }
       }else{
+        // If arriving from your domain, auto-set once (covers cases where the SGPA opened in same tab)
         if (document.referrer && document.referrer.includes(location.host)) {
           sessionStorage.setItem(SITE_SESSION_KEY,'1'); localStorage.setItem(SITE_SESSION_KEY,'1');
           return checkSiteSession();
         }
-        if(manual){ /* optional toast */ }
+        if(manual){ /* no-op */ }
       }
     }
     function unlockExtra(){
@@ -293,14 +295,14 @@
       checkSiteSession(false);
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user} } = await supabase.auth.getUser();
         if (user) {
           currentUserEmail = user.email;
           currentUserId = user.id;
           await loadFromCloud();
           showMainApp();
           document.getElementById('siteGate').classList.add('hidden');
-          if(sessionStorage.getItem(EXTRA_OK_KEY)!=='1'){
+          if(sessionStorage.getItem('sgpaExtraOk')!=='1'){
             document.getElementById('sgpaExtraLock').classList.remove('hidden');
           }else{
             document.getElementById('sgpaExtraLock').classList.add('hidden');
@@ -440,7 +442,7 @@
       document.getElementById('mainApp').classList.add('hidden');
     }
     function showMainApp() {
-      if(!siteIsOk() || sessionStorage.getItem(EXTRA_OK_KEY)!=='1'){
+      if(!siteIsOk() || sessionStorage.getItem('sgpaExtraOk')!=='1'){
         document.getElementById('mainApp').classList.add('hidden');
         document.getElementById('siteGate').classList.remove('hidden');
         return;
@@ -669,3 +671,4 @@
   </script>
 </body>
 </html>
+
