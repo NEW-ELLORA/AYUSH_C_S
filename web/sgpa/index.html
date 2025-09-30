@@ -178,8 +178,8 @@ function downloadFile(name,content,type){ const a=document.createElement('a'); a
 
 /* ============ Math/Domain ============ */
 const SEE_DIV=2, GRADE_DIV=10, CIE_MAX=50;
-/* CIE = min(50, MSE1+MSE2+Task1+Task2+Task3) — practical merged into CIE inputs */
-const cie=(s)=>Math.min(CIE_MAX, s.mse1+s.mse2+s.task1+s.task2+s.task3);
+/* CIE is MANUAL now (0–50). */
+const cie=(s)=>Math.min(CIE_MAX, Number(s.cie)||0);
 const seeScaled=(s)=>s.see/SEE_DIV;
 const finalMarks=(s)=>Math.max(0, cie(s)+seeScaled(s));
 const gradePoint=(s)=>finalMarks(s)/GRADE_DIV;
@@ -190,7 +190,7 @@ const linReg=(x,y)=>{const n=x.length; if(n<2)return{m:0,b:y.reduce((a,b)=>a+b,0
 
 /* ============ App state ============ */
 let currentUser=null, currentStudent=null, students={}, charts=[], userSession=null;
-const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, task3:0, practical:0, see:0, included:true, note:''});
+const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, task3:0, cie:0, see:0, included:true, note:''});
 const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, semesters:[[blankSubject()]]});
 
 /* ============ Supabase CRUD ============ */
@@ -266,7 +266,6 @@ function renderSemester(sem,semIndex){
   btnRemoveSem.onclick=()=>{ if(confirm('Remove this semester?')){ const rec=students[currentStudent]; rec.semesters.splice(semIndex,1); renderAll(); } };
   hRight.append(btnAdd,btnCSV,btnCharts,btnRemoveSem); header.append(hLeft,hRight);
   const table=document.createElement('table');
-  /* Replace 'Prac.' column with 'CIE' and add 'Note' column */
   table.innerHTML='<thead><tr><th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th><th>Task3</th><th>CIE</th><th>SEE</th><th>GP</th><th>Note</th><th>Action</th></tr></thead><tbody id="tbody-'+semIndex+'"></tbody>';
   card.append(header,table);
   const tbody=table.querySelector('tbody');
@@ -303,8 +302,8 @@ function renderSemester(sem,semIndex){
       mkCell(mkNum(s.task1,0,4,'0.5', v=>s.task1=v)),
       mkCell(mkNum(s.task2,0,4,'0.5', v=>s.task2=v)),
       mkCell(mkNum(s.task3,0,2,'0.5', v=>s.task3=v)),
-      /* CIE display (auto-calculated, capped at 50) */
-      mkCell((()=>{ const div=document.createElement('div'); div.textContent=cie(s).toFixed(0); div.style.fontWeight='700'; return div; })()),
+      /* CIE is editable by user (0–50) */
+      mkCell(mkNum(s.cie,0,50,'0.5', v=>s.cie=v)),
       mkCell(mkNum(s.see,0,100,'1', v=>s.see=v)),
       mkCell((()=>{ const div=document.createElement('div'); const gp=gradePoint(s); div.textContent=gp.toFixed(2); div.style.fontWeight='700'; div.style.color=gp>=9?'var(--green)':(gp>=7?'#e5e557':'var(--red)'); return div; })()),
       mkCell(noteIcon),
@@ -316,7 +315,7 @@ function renderSemester(sem,semIndex){
   const refresh=()=>{ renderRows(); document.getElementById('sgpa-'+semIndex).textContent='SGPA: '+sgpa(sem).toFixed(3); updateCGPAWidgets(); drawOverview(); persist(); };
 
   btnAdd.onclick=()=>{ sem.push(blankSubject('Subject '+(sem.length+1))); refresh(); };
-  /* CSV without Practical; include CIE column */
+  /* CSV includes your CIE value */
   btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(0), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3)])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(r=>r.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',')).join('\n'), 'text/csv'); };
   btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1));
 
