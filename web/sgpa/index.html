@@ -28,7 +28,6 @@
   .btn:hover{filter:brightness(1.08)}
   .btn.primary{background:linear-gradient(90deg, var(--blue), #7c3aed); border-color:rgba(124,58,237,.45)}
   .btn.danger{background:#2a1220; border-color:#661d35}
-  .btn.ghost{background:transparent}
   input,select{background:#0e1723; color:#fff; border:1px solid rgba(255,255,255,.14); padding:9px 10px; border-radius:10px; outline:none}
   table{width:100%; border-collapse:collapse}
   th,td{border-bottom:1px solid rgba(255,255,255,.08); padding:8px}
@@ -40,45 +39,22 @@
   .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .right{display:flex; gap:10px; align-items:center}
-  .status{font-weight:700}
   .chip{display:inline-block; padding:4px 8px; border-radius:999px; background:#17314b; border:1px solid rgba(255,255,255,.12)}
-  .edge{position:fixed; left:-176px; top:40%; transform:translateY(-50%); width:220px; height:48px;
-        background:rgba(13,19,28,.92); border-right:1px solid rgba(0,255,229,.28); border-top-right-radius:12px; border-bottom-right-radius:12px;
-        box-shadow:0 6px 18px rgba(0,0,0,.45); overflow:hidden; cursor:pointer; z-index:50; transition:left .25s ease}
-  .edge::before{content:""; position:absolute; left:-24px; top:0; bottom:0; width:30px}
-  .edge:hover{left:0}
-  .edge .edge-row{display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .85rem;}
-  .edge .dot{width:10px;height:10px;border-radius:50%;background:var(--aqua); box-shadow:0 0 10px var(--aqua), 0 0 18px var(--aqua)}
-  .edge a{color:#e8f1ff; text-decoration:none; font-weight:700}
   .auth{max-width:620px; margin:40px auto; padding:24px}
   .center{text-align:center}
   .mb16{margin-bottom:16px}
-  .mb8{margin-bottom:8px}
-  .mt8{margin-top:8px}
   .mt24{margin-top:24px}
   .hide{display:none}
-  .warn{color:#ffbf69}
+  canvas{max-width:100% !important}
 </style>
 </head>
 <body>
-
-<div class="edge" title="Back to Dashboard">
-  <div class="edge-row">
-    <span class="dot"></span>
-    <a href="#" onclick="return false;">SGPA Home</a>
-  </div>
-</div>
 
 <div class="wrap">
   <div class="row" style="justify-content:space-between; margin-bottom:18px">
     <div class="row">
       <div class="h1">📊 SGPA / CGPA Analyzer</div>
       <span class="chip">Web + Supabase</span>
-    </div>
-    <div class="right">
-      <button id="btnExportAll" class="btn">⬇ Export All CSV</button>
-      <label class="btn">⬆ Import JSON<input id="importJson" type="file" accept="application/json" style="display:none"></label>
-      <button id="btnExportStudent" class="btn">⬇ Export Student JSON</button>
     </div>
   </div>
 
@@ -92,17 +68,13 @@
     <div class="grid g-2">
       <div class="card">
         <div class="mb8" style="font-weight:700">Create Account</div>
-        <input id="regUser" placeholder="Username or email (e.g., ayush or you@example.com)" class="mb8" />
+        <input id="regUser" placeholder="Username" class="mb8" />
         <input id="regPass" type="password" placeholder="Password" class="mb8" />
         <button id="btnRegister" class="btn primary">Create</button>
-        <div class="muted mt8" style="font-size:12px">
-          Accounts use Supabase Auth. You can enter a real email, or just a username—if you enter a username, we’ll use
-          <code>username@example.com</code> internally.
-        </div>
       </div>
       <div class="card">
         <div class="mb8" style="font-weight:700">Login</div>
-        <input id="logUser" placeholder="Username or email" class="mb8" />
+        <input id="logUser" placeholder="Username" class="mb8" />
         <input id="logPass" type="password" placeholder="Password" class="mb8" />
         <button id="btnLogin" class="btn primary">Login</button>
         <button id="btnGuest" class="btn mt8">Continue as Guest</button>
@@ -132,29 +104,20 @@
     <div class="grid g-3 mb16">
       <div class="glass card">
         <div style="font-weight:700" class="mb8">CGPA progression</div>
-        <canvas id="overviewChart" height="120"></canvas>
+        <canvas id="overviewChart"></canvas>
       </div>
       <div class="glass card">
         <div style="font-weight:700" class="mb8">Goal planner</div>
         <div class="grid g-2">
-          <div>
-            <div class="muted mb8">Prev CGPA</div>
-            <input id="prevCGPA" value="0" />
-          </div>
-          <div>
-            <div class="muted mb8">Prev Credits</div>
-            <input id="prevCredits" value="0" />
-          </div>
-          <div>
-            <div class="muted mb8">Goal CGPA</div>
-            <input id="goalCGPA" value="9" />
-          </div>
+          <div><div class="muted mb8">Prev CGPA</div><input id="prevCGPA" value="0" inputmode="decimal" /></div>
+          <div><div class="muted mb8">Prev Credits</div><input id="prevCredits" value="0" inputmode="numeric" /></div>
+          <div><div class="muted mb8">Goal CGPA</div><input id="goalCGPA" value="9" inputmode="decimal" /></div>
         </div>
         <button id="btnPlan" class="btn primary mt8">Plan Goal</button>
       </div>
       <div class="glass card">
         <div style="font-weight:700" class="mb8">Analytics</div>
-        <div id="analytics" style="white-space:pre-wrap; font-family:ui-monospace,Consolas,monaco; font-size:13px; line-height:1.35; max-height:220px; overflow:auto"></div>
+        <div id="analytics" style="white-space:pre-wrap; font-size:13px; line-height:1.35; max-height:220px; overflow:auto"></div>
       </div>
     </div>
 
