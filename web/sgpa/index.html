@@ -376,21 +376,18 @@ function openChartsForSemester(sem, title){
     + '<canvas id="c4"></canvas>'
     + '<canvas id="c5"></canvas>'
     + '<canvas id="c6"></canvas>'
-    + '</div></div>'
-    + '<script>'
-    + "Chart.defaults.color='#e9f2ff';"
-    + "Chart.defaults.font.size=13;"
-    + "Chart.defaults.borderColor='rgba(255,255,255,0.18)';"
-    + "const gridCol='rgba(255,255,255,0.18)';"
-    + "const tickCol='#cfe8ff';"
-    + "const lineCol='#38e4ff';"
-    + "const barCol='rgba(56,228,255,0.75)';"
-    + "const barCol2='rgba(183,132,255,0.75)';"
-    + "const barCol3='rgba(34,197,94,0.75)';"
-    + "const barCol4='rgba(251,191,36,0.75)';"
-    + "const barCol5='rgba(248,113,113,0.75)';"
-    + '</script>';
+    + '</div></div>';
   win.document.write(html);
+
+  // Theme variables set from parent (no inline script in HTML to avoid text spill)
+  win.tickCol='#cfe8ff';
+  win.gridCol='rgba(255,255,255,0.18)';
+  win.lineCol='#38e4ff';
+  win.barCol='rgba(56,228,255,0.75)';
+  win.barCol2='rgba(183,132,255,0.75)';
+  win.barCol3='rgba(34,197,94,0.75)';
+  win.barCol4='rgba(251,191,36,0.75)';
+  win.barCol5='rgba(248,113,113,0.75)';
 
   const names=sem.map(function(s){return s.name;});
   const finals=sem.map(function(s){return finalMarks(s);});
@@ -404,31 +401,31 @@ function openChartsForSemester(sem, title){
   const finalsInc=finals.filter(function(_,i){return included[i];});
   const namesInc=names.filter(function(_,i){return included[i];});
 
-  const w=win; const make=function(id,config){return new w.Chart(w.document.getElementById(id).getContext('2d'),config);};
+  const make=function(id,config){return new win.Chart(win.document.getElementById(id).getContext('2d'),config);};
   const commonScales = {
-    x:{ticks:{color:w.tickCol},grid:{color:'rgba(255,255,255,0.12)'}},
-    y:{ticks:{color:w.tickCol},grid:{color:w.gridCol}}
+    x:{ticks:{color:win.tickCol},grid:{color:'rgba(255,255,255,0.12)'}},
+    y:{ticks:{color:win.tickCol},grid:{color:win.gridCol}}
   };
   const opts=function(extra){ extra=extra||{}; return {responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#e9f2ff'}},title:{display:!!extra.title,text:extra.title,color:'#e9f2ff',font:{weight:'700'}}},scales:extra.scales||commonScales};};
 
-  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,borderColor:w.lineCol,backgroundColor:'rgba(56,228,255,0.2)',borderWidth:3,pointRadius:3,tension:.35}]},options:opts({title:'Final marks (Line)',scales:{x:commonScales.x,y:{ticks:{color:w.tickCol},grid:{color:w.gridCol},min:0,max:100}})});
-  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals,backgroundColor:w.barCol,borderWidth:0}]},options:opts({title:'Final marks (Bar)',scales:{x:commonScales.x,y:{ticks:{color:w.tickCol},grid:{color:w.gridCol},min:0,max:100}}})});
-  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1],backgroundColor:[w.barCol,w.barCol2,w.barCol3,w.barCol4,w.barCol5]}]}, options:{plugins:{legend:{position:'bottom',labels:{color:'#e9f2ff'}},title:{display:true,text:'Final share (Pie)'}},responsive:true}});
+  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,borderColor:win.lineCol,backgroundColor:'rgba(56,228,255,0.2)',borderWidth:3,pointRadius:3,tension:.35}]},options:opts({title:'Final marks (Line)',scales:{x:commonScales.x,y:{ticks:{color:win.tickCol},grid:{color:win.gridCol},min:0,max:100}})});
+  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals,backgroundColor:win.barCol,borderWidth:0}]},options:opts({title:'Final marks (Bar)',scales:{x:commonScales.x,y:{ticks:{color:win.tickCol},grid:{color:win.gridCol},min:0,max:100}}})});
+  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1],backgroundColor:[win.barCol,win.barCol2,win.barCol3,win.barCol4,win.barCol5]}]}, options:{plugins:{legend:{position:'bottom',labels:{color:'#e9f2ff'}},title:{display:true,text:'Final share (Pie)'}},responsive:true}});
   make('c4',{type:'bar', data:{labels:names, datasets:[
-      {label:'MSE1',data:mse1s,stack:'s',backgroundColor:w.barCol},
-      {label:'MSE2',data:mse2s,stack:'s',backgroundColor:w.barCol2},
-      {label:'Tasks (T1+T2+T3)',data:tasks,stack:'s',backgroundColor:w.barCol3},
-      {label:'SEE/2',data:seeContrib,stack:'s',backgroundColor:w.barCol5}]},
-    options:opts({title:'Component stack (to 100)',scales:{x:{stacked:true,ticks:{color:w.tickCol}}, y:{stacked:true,min:0,max:100,ticks:{color:w.tickCol},grid:{color:w.gridCol}}}})});
+      {label:'MSE1',data:mse1s,stack:'s',backgroundColor:win.barCol},
+      {label:'MSE2',data:mse2s,stack:'s',backgroundColor:win.barCol2},
+      {label:'Tasks (T1+T2+T3)',data:tasks,stack:'s',backgroundColor:win.barCol3},
+      {label:'SEE/2',data:seeContrib,stack:'s',backgroundColor:win.barCol5}]},
+    options:opts({title:'Component stack (to 100)',scales:{x:{stacked:true,ticks:{color:win.tickCol}}, y:{stacked:true,min:0,max:100,ticks:{color:win.tickCol},grid:{color:win.gridCol}}}})});
   const bins=Math.min(10,Math.max(2,finals.length)), min=0, max=100, width=(max-min)/bins;
   const counts=new Array(bins).fill(0);
   finals.forEach(function(v){const idx=Math.min(bins-1,Math.max(0,Math.floor((v-min)/width))); counts[idx]++;});
   const labels=counts.map(function(_,i){return (Math.round(min+i*width))+'-'+(Math.round(min+(i+1)*width));});
-  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Count', data:counts,backgroundColor:w.barCol4}]}, options:opts({title:'Distribution (Histogram)'})});
+  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Count', data:counts,backgroundColor:win.barCol4}]}, options:opts({title:'Distribution (Histogram)'})});
 
   const reg=linReg(cies,sees); const xs=[Math.min.apply(null,cies.concat([0])), Math.max.apply(null,cies.concat([100]))]; const ys=xs.map(function(x){return reg.m*x+reg.b;});
-  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map(function(x,i){return {x:x,y:sees[i]};}), backgroundColor:w.barCol2}, {label:'Regression', data: xs.map(function(x,i){return {x:x,y:ys[i]};}), type:'line', borderColor:w.lineCol, borderWidth:2, pointRadius:0}]}, options:opts({title:'CIE vs SEE (with regression)',scales:{x:{title:{display:true,text:'CIE (0-50)'},ticks:{color:w.tickCol},grid:{color:w.gridCol}}, y:{title:{display:true,text:'SEE (0-100)'},ticks:{color:w.tickCol},grid:{color:w.gridCol}}}})});
-  w.document.title=title+' - r='+pearson(cies,sees).toFixed(3);
+  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map(function(x,i){return {x:x,y:sees[i]};}), backgroundColor:win.barCol2}, {label:'Regression', data: xs.map(function(x,i){return {x:x,y:ys[i]};}), type:'line', borderColor:win.lineCol, borderWidth:2, pointRadius:0}]}, options:opts({title:'CIE vs SEE (with regression)',scales:{x:{title:{display:true,text:'CIE (0-50)'} ,ticks:{color:win.tickCol},grid:{color:win.gridCol}}, y:{title:{display:true,text:'SEE (0-100)'} ,ticks:{color:win.tickCol},grid:{color:win.gridCol}}}})});
+  win.document.title=title+' - r='+pearson(cies,sees).toFixed(3);
 }
 
 function openCharts(){} 
@@ -437,18 +434,22 @@ function openAllCharts(){ const rec=students[currentStudent]; if(!rec)return; re
 /* ============ Goal Planner ============ */
 function planGoal(){
   const rec=students[currentStudent]; if(!rec)return;
-  const prevCGPA=Number($('prevCGPA').value)||0, goal=Number($('goalCGPA').value)||0;
+  const prevCGPA=Number($('prevCGPA').value)||0; // kept for display
+  const goal=Number($('goalCGPA').value)||0;
   const incSubs=rec.semesters.flatMap(function(sem){return sem.filter(function(s){return s.included;});});
   const curAvg = incSubs.length? (incSubs.reduce(function(a,s){return a+gradePoint(s);},0)/incSubs.length) : 0;
 
   const txt=[];
   if(curAvg>=goal){ txt.push('Goal already met with current marks.'); }
   else{
-    const needGP = goal;
+    const needGP = goal; // simple target equal to goal CGPA
     txt.push('Uniform required GP across current subjects: '+needGP.toFixed(3)+(needGP>10?' (impossible over 10)':''));
     txt.push('');
     incSubs.forEach(function(s){
-      const reqFinal=Math.min(10,needGP)*G R A D E _ D I V; // <-- NOTE: when pasting, remove spaces: GRADE_DIV
+      const reqFinal = Math.min(10, needGP) * GRADE_DIV; // out of 100
+      const neededSEEraw = Math.max(0, reqFinal - cie(s)) * SEE_DIV;
+      const needSEE = neededSEEraw > s.see ? Math.min(100, neededSEEraw) : 0;
+      txt.push((s.name||'Subject')+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2));
     });
   }
   $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+'\n\n'+txt.join('\n');
@@ -459,13 +460,13 @@ function predictNeeds(){
   const rec=students[currentStudent]; if(!rec)return;
   const goal = Number($('goalCGPA').value)||0;
   const needGP = goal;
-  const reqFinal = Math.min(10, needGP) * GRADE_DIV;
+  const reqFinal = Math.min(10, needGP) * GRADE_DIV; // target /100
   const curSem = rec.semesters[rec.semesters.length-1] || [];
   const clamp = function(v,min,max){return Math.max(min,Math.min(max,v));};
 
   const MAX = {mse1:20,mse2:20,task1:4,task2:4,task3:2, cie:50, see:100};
   const lines = [];
-  lines.push('Prediction for latest semester to reach per-subject final ~= '+reqFinal.toFixed(1)+'/100 (goal CGPA '+goal+')');
+  lines.push('Prediction for latest semester to reach per-subject final ≈ '+reqFinal.toFixed(1)+'/100 (goal CGPA '+goal+')');
   lines.push('');
 
   curSem.forEach(function(s){
@@ -475,7 +476,7 @@ function predictNeeds(){
       const needSEEraw = Math.max(0, reqFinal - curCIE) * SEE_DIV;
       const needSEE = clamp(needSEEraw, 0, 100);
       const ok = needSEE <= 100;
-      lines.push((s.name||'Subject')+': CIE '+curCIE+'/50 fixed -> SEE needed ~= '+needSEE.toFixed(1)+'/100 '+(ok?'':'(impossible)'));
+      lines.push((s.name||'Subject')+': CIE '+curCIE+'/50 fixed → SEE needed ≈ '+needSEE.toFixed(1)+'/100 '+(ok?'':'(impossible)'));
       return;
     }
     const cur = {
@@ -517,8 +518,8 @@ function predictNeeds(){
     const ok = achievableFinal + 1e-6 >= reqFinal;
 
     lines.push(
-      (s.name||'Subject')+': target final '+reqFinal.toFixed(1)+'/100'
-      +' -> aim MSE1~'+suggest.mse1.toFixed(1)+'/20, MSE2~'+suggest.mse2.toFixed(1)+'/20,'
+      (s.name||'Subject')+': target '+reqFinal.toFixed(1)+'/100'
+      +' → aim MSE1~'+suggest.mse1.toFixed(1)+'/20, MSE2~'+suggest.mse2.toFixed(1)+'/20,'
       +' T1~'+suggest.task1.toFixed(1)+'/4, T2~'+suggest.task2.toFixed(1)+'/4, T3~'+suggest.task3.toFixed(1)+'/2,'
       +' SEE~'+suggest.see.toFixed(1)+'/100 '+(ok?'':'(may still fall short)')
     );
