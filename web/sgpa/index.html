@@ -178,7 +178,7 @@ function downloadFile(name,content,type){ const a=document.createElement('a'); a
 
 /* ============ Math/Domain ============ */
 const SEE_DIV=2, GRADE_DIV=10, CIE_MAX=50;
-/* CIE = min(50, MSE1+MSE2+Task1+Task2+Task3)  — practical merged into CIE inputs (no separate field) */
+/* CIE = min(50, MSE1+MSE2+Task1+Task2+Task3) — practical merged into CIE inputs */
 const cie=(s)=>Math.min(CIE_MAX, s.mse1+s.mse2+s.task1+s.task2+s.task3);
 const seeScaled=(s)=>s.see/SEE_DIV;
 const finalMarks=(s)=>Math.max(0, cie(s)+seeScaled(s));
@@ -303,7 +303,7 @@ function renderSemester(sem,semIndex){
       mkCell(mkNum(s.task1,0,4,'0.5', v=>s.task1=v)),
       mkCell(mkNum(s.task2,0,4,'0.5', v=>s.task2=v)),
       mkCell(mkNum(s.task3,0,2,'0.5', v=>s.task3=v)),
-      /* CIE display cell (auto-calculated, capped at 50) */
+      /* CIE display (auto-calculated, capped at 50) */
       mkCell((()=>{ const div=document.createElement('div'); div.textContent=cie(s).toFixed(0); div.style.fontWeight='700'; return div; })()),
       mkCell(mkNum(s.see,0,100,'1', v=>s.see=v)),
       mkCell((()=>{ const div=document.createElement('div'); const gp=gradePoint(s); div.textContent=gp.toFixed(2); div.style.fontWeight='700'; div.style.color=gp>=9?'var(--green)':(gp>=7?'#e5e557':'var(--red)'); return div; })()),
@@ -398,7 +398,6 @@ function openChartsForSemester(sem, title){
   make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{...commonOpts,scales:{y:{min:0,max:100}}}});
   make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{...commonOpts,scales:{y:{min:0,max:100}}}});
   make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]} ,options:commonOpts});
-  /* stacked without Practical column (since practical is merged into CIE inputs) */
   make('c4',{type:'bar', data:{labels:names, datasets:[
       {label:'MSE1',data:mse1s,stack:'s'},
       {label:'MSE2',data:mse2s,stack:'s'},
@@ -416,7 +415,7 @@ function openChartsForSemester(sem, title){
   w.document.title=title+' — r='+pearson(cies,sees).toFixed(3);
 }
 
-function openCharts(){/* legacy no-op */} /* keep if referenced somewhere */
+function openCharts(){/* legacy no-op */} 
 function openAllCharts(){ const rec=students[currentStudent]; if(!rec)return; rec.semesters.forEach((sem,i)=>openChartsForSemester(sem,'Semester '+(i+1))); }
 
 /* ============ Goal Planner (credits removed) ============ */
@@ -429,13 +428,11 @@ function planGoal(){
   const txt=[];
   if(curAvg>=goal){ txt.push('Goal already met with current marks.'); }
   else{
-    /* naive uniform target GP across included subjects */
     const needGP = goal;
     txt.push('Uniform required GP across current subjects: '+needGP.toFixed(3)+(needGP>10?' (⚠ >10 impossible)':''));
     txt.push('');
     incSubs.forEach(s=>{
       const reqFinal=Math.min(10,needGP)*GRADE_DIV; /* out of 100 */
-      /* CIE is clamped at 50; we try to meet final via SEE where possible */
       const neededSEEraw=Math.max(0, reqFinal-cie(s))*SEE_DIV;
       const needSEE=neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0;
       txt.push(s.name+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2)+' ; Achievable: '+(needGP<=10));
