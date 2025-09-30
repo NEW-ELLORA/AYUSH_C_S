@@ -97,7 +97,6 @@
       <div class="row">
         <div id="who" class="chip">Welcome, Guest</div>
         <div id="cgpaBadge" class="chip">CGPA: 0.00</div>
-        <div id="credBadge" class="chip">Credits: 0</div>
       </div>
       <div class="right">
         <select id="studentSelect" style="display:none"></select>
@@ -117,10 +116,7 @@
             <div class="muted mb8">Prev CGPA</div>
             <input id="prevCGPA" value="0" inputmode="decimal" />
           </div>
-          <div>
-            <div class="muted mb8">Prev Credits</div>
-            <input id="prevCredits" value="0" inputmode="numeric" />
-          </div>
+          <!-- credits removed -->
           <div>
             <div class="muted mb8">Goal CGPA</div>
             <input id="goalCGPA" value="9" inputmode="decimal" />
@@ -176,19 +172,21 @@ const saveLocal=(db)=>localStorage.setItem(DBKEY,JSON.stringify(db));
 function downloadFile(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:type||'text/plain'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
 
 /* ============ Math/Domain ============ */
-const SEE_DIV=2, GRADE_DIV=10;
-const cie=(s)=>s.mse1+s.mse2+s.task1+s.task2+s.task3;
+const SEE_DIV=2, GRADE_DIV=10, CIE_MAX=50;
+/* CIE includes practical; clamp at 50 */
+const cie=(s)=>Math.min(CIE_MAX, s.mse1+s.mse2+s.task1+s.task2+s.task3+s.practical);
 const seeScaled=(s)=>s.see/SEE_DIV;
 const finalMarks=(s)=>Math.max(0, cie(s)+seeScaled(s));
 const gradePoint=(s)=>finalMarks(s)/GRADE_DIV;
-const sgpa=(subjects)=>{const inc=subjects.filter(s=>s.included); const tot=inc.reduce((a,b)=>a+Number(b.credits||0),0); if(!tot)return 0; const qp=inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0); return qp/tot;};
+/* SGPA = average of GP across included subjects (no credits) */
+const sgpa=(subjects)=>{const inc=subjects.filter(s=>s.included); const n=inc.length; if(!n)return 0; const sum=inc.reduce((a,b)=>a+gradePoint(b),0); return sum/n;};
 const pearson=(x,y)=>{if(x.length!==y.length||x.length<2)return 0; const n=x.length; const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n; let num=0,dxs=0,dys=0; for(let i=0;i<n;i++){const dx=x[i]-mx, dy=y[i]-my; num+=dx*dy; dxs+=dx*dx; dys+=dy*dy;} const den=Math.sqrt(dxs)*Math.sqrt(dys); return den?num/den:0;};
 const linReg=(x,y)=>{const n=x.length; if(n<2)return{m:0,b:y.reduce((a,b)=>a+b,0)/n||0}; const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n; let num=0,den=0; for(let i=0;i<n;i++){num+=(x[i]-mx)*(y[i]-my); den+=(x[i]-mx)**2;} const m=den?num/den:0; return {m,b:my-m*mx};};
 
 /* ============ App state ============ */
 let currentUser=null, currentStudent=null, students={}, charts=[], userSession=null;
-const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, task3:0, see:0, credits:3, included:true});
-const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[[blankSubject()]]});
+const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, task3:0, practical:0, see:0, included:true});
+const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, semesters:[[blankSubject()]]});
 
 /* ============ Supabase CRUD ============ */
 const EMAIL_SUFFIX='@sgpa-demo.dev';
@@ -246,7 +244,7 @@ function renderAll(){
   charts.forEach(c=>{ try{c.destroy();}catch{} }); charts=[];
   const rec=students[currentStudent]; if(!rec)return;
   $('who').textContent='Welcome, '+(currentUser||'Guest');
-  $('prevCGPA').value=rec.prevCGPA??0; $('prevCredits').value=rec.prevCredits??0;
+  $('prevCGPA').value=rec.prevCGPA??0;
   const host=$('semesters'); host.innerHTML='';
   rec.semesters.forEach((sem,idx)=>host.appendChild(renderSemester(sem,idx)));
   updateCGPAWidgets(); drawOverview(); persist();
@@ -263,12 +261,12 @@ function renderSemester(sem,semIndex){
   btnRemoveSem.onclick=()=>{ if(confirm('Remove this semester?')){ const rec=students[currentStudent]; rec.semesters.splice(semIndex,1); renderAll(); } };
   hRight.append(btnAdd,btnCSV,btnCharts,btnRemoveSem); header.append(hLeft,hRight);
   const table=document.createElement('table');
-  table.innerHTML='<thead><tr><th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th><th>Task3</th><th>SEE</th><th>Credits</th><th>GP</th><th>Action</th></tr></thead><tbody id="tbody-'+semIndex+'"></tbody>';
+  table.innerHTML='<thead><tr><th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th><th>Task3</th><th>Prac.</th><th>SEE</th><th>GP</th><th>Action</th></tr></thead><tbody id="tbody-'+semIndex+'"></tbody>';
   card.append(header,table);
   const tbody=table.querySelector('tbody');
 
   const mkCell=(el)=>{const td=document.createElement('td'); td.appendChild(el); return td;};
-  /* STRICT bounds + keyboard friendly number input */
+  /* strict clamped numeric */
   const mkNum=(val,min,max,step,cb)=>{
     const i=Object.assign(document.createElement('input'),{type:'number',value:val,min:min,max:max,step:step,inputMode:'decimal',style:'width:84px'});
     const clamp=(v)=>{ if(Number.isNaN(v)) return min; if(v<min) v=min; if(v>max) v=max; return v; };
@@ -291,8 +289,8 @@ function renderSemester(sem,semIndex){
       mkCell(mkNum(s.task1,0,4,'0.5', v=>s.task1=v)),
       mkCell(mkNum(s.task2,0,4,'0.5', v=>s.task2=v)),
       mkCell(mkNum(s.task3,0,2,'0.5', v=>s.task3=v)),
+      mkCell(mkNum(s.practical,0,20,'0.5', v=>s.practical=v)), /* practical added */
       mkCell(mkNum(s.see,0,100,'1', v=>s.see=v)),
-      mkCell(mkNum(s.credits,1,30,'1', v=>s.credits=v)),
       mkCell((()=>{ const div=document.createElement('div'); const gp=gradePoint(s); div.textContent=gp.toFixed(2); div.style.fontWeight='700'; div.style.color=gp>=9?'var(--green)':(gp>=7?'#e5e557':'var(--red)'); return div; })()),
       mkCell((()=>{ const b=Object.assign(document.createElement('button'),{className:'btn danger',textContent:'Remove'}); b.onclick=()=>{ if(confirm('Remove '+s.name+'?')){ sem.splice(subIndex,1); refresh(); } }; return b; })())
     ];
@@ -302,7 +300,7 @@ function renderSemester(sem,semIndex){
   const refresh=()=>{ renderRows(); document.getElementById('sgpa-'+semIndex).textContent='SGPA: '+sgpa(sem).toFixed(3); updateCGPAWidgets(); drawOverview(); persist(); };
 
   btnAdd.onclick=()=>{ sem.push(blankSubject('Subject '+(sem.length+1))); refresh(); };
-  btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(r=>r.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',')).join('\n'), 'text/csv'); };
+  btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','Practical','CIE','SEE','SEE_scaled','Final(100)','GP']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3,s.practical, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3)])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(r=>r.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',')).join('\n'), 'text/csv'); };
   btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1));
 
   renderRows();
@@ -311,13 +309,11 @@ function renderSemester(sem,semIndex){
 
 function updateCGPAWidgets(){
   const rec=students[currentStudent]; if(!rec)return;
-  const prevC=Number($('prevCredits').value)||0, prevG=Number($('prevCGPA').value)||0;
-  rec.prevCredits=prevC; rec.prevCGPA=prevG;
-  let curQP=0, curCredits=0;
-  rec.semesters.forEach(sem=>{ sem.filter(s=>s.included).forEach(s=>{ curQP+=gradePoint(s)*(s.credits||0); curCredits+=(s.credits||0); }); });
-  const totalCredits=prevC+curCredits, totalQP=prevG*prevC+curQP, CGPA=totalCredits?(totalQP/totalCredits):0;
+  rec.prevCGPA=Number($('prevCGPA').value)||0;
+  /* Average across all included subjects across semesters */
+  const all=rec.semesters.flatMap(sem=>sem.filter(s=>s.included));
+  const CGPA=all.length? (all.reduce((a,s)=>a+gradePoint(s),0)/all.length) : 0;
   $('cgpaBadge').textContent='CGPA: '+CGPA.toFixed(2);
-  $('credBadge').textContent='Credits: '+totalCredits;
 }
 
 function drawOverview(){
@@ -325,10 +321,10 @@ function drawOverview(){
   const ctx=$('overviewChart').getContext('2d');
   const existing=charts.find(c=>c.ctx&&c.ctx.canvas===ctx.canvas);
   if(existing){ try{existing.destroy();}catch{} charts=charts.filter(c=>c!==existing); }
-  const prevC=rec.prevCredits||0, prevG=rec.prevCGPA||0;
-  const semSgpas=[], semCredits=[];
-  rec.semesters.forEach(sem=>{ const inc=sem.filter(s=>s.included); const cred=inc.reduce((a,b)=>a+(b.credits||0),0); const qp=inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0); semSgpas.push(cred?qp/cred:0); semCredits.push(cred); });
-  const cum=[]; let tq=prevG*prevC, tc=prevC; semSgpas.forEach((s,i)=>{ tq+=s*semCredits[i]; tc+=semCredits[i]; cum.push(tc?(tq/tc):0); });
+
+  const semSgpas=[];
+  rec.semesters.forEach(sem=>{ semSgpas.push(sgpa(sem)); });
+  const cum=[]; let total=0; for(let i=0;i<semSgpas.length;i++){ total+=semSgpas[i]; cum.push(total/(i+1)); }
 
   const grad = ctx.createLinearGradient(0,0,0,260);
   grad.addColorStop(0,'rgba(0,255,229,0.45)');
@@ -340,7 +336,7 @@ function drawOverview(){
       datasets:[{label:'Cumulative CGPA',data:cum,fill:true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
     options:{
       responsive:true,
-      maintainAspectRatio:true, /* avoid vertical stretch */
+      maintainAspectRatio:true,
       plugins:{legend:{labels:{boxWidth:12}}},
       scales:{y:{min:0,max:10,grid:{color:'rgba(255,255,255,.06)'}}, x:{grid:{display:false}}}
     }
@@ -375,17 +371,24 @@ function openChartsForSemester(sem, title){
   const mse1s=sem.map(s=>s.mse1);
   const mse2s=sem.map(s=>s.mse2);
   const tasks=sem.map(s=>s.task1+s.task2+s.task3);
+  const practicals=sem.map(s=>s.practical);
   const seeContrib=sem.map(s=>seeScaled(s));
   const finalsInc=finals.filter((_,i)=>included[i]);
   const namesInc=names.filter((_,i)=>included[i]);
 
   const w=win; const make=(id,config)=>new w.Chart(w.document.getElementById(id).getContext('2d'),config);
-  const commonOpts={responsive:true,maintainAspectRatio:true}; /* every chart respects container size */
+  const commonOpts={responsive:true,maintainAspectRatio:true};
 
   make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{...commonOpts,scales:{y:{min:0,max:100}}}});
   make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{...commonOpts,scales:{y:{min:0,max:100}}}});
   make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]} ,options:commonOpts});
-  make('c4',{type:'bar', data:{labels:names, datasets:[{label:'MSE1',data:mse1s,stack:'s'},{label:'MSE2',data:mse2s,stack:'s'},{label:'Tasks',data:tasks,stack:'s'},{label:'SEE/2',data:seeContrib,stack:'s'}]}, options:{...commonOpts,scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
+  make('c4',{type:'bar', data:{labels:names, datasets:[
+      {label:'MSE1',data:mse1s,stack:'s'},
+      {label:'MSE2',data:mse2s,stack:'s'},
+      {label:'Tasks',data:tasks,stack:'s'},
+      {label:'Practical',data:practicals,stack:'s'},
+      {label:'SEE/2',data:seeContrib,stack:'s'}]},
+    options:{...commonOpts,scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
   const bins=Math.min(10,Math.max(2,finals.length)), min=0, max=100, width=(max-min)/bins;
   const counts=new Array(bins).fill(0);
   finals.forEach(v=>{const idx=Math.min(bins-1,Math.max(0,Math.floor((v-min)/width))); counts[idx]++;});
@@ -399,23 +402,29 @@ function openChartsForSemester(sem, title){
 
 function openAllCharts(){ const rec=students[currentStudent]; if(!rec)return; rec.semesters.forEach((sem,i)=>openChartsForSemester(sem,'Semester '+(i+1))); }
 
-/* ============ Goal Planner ============ */
+/* ============ Goal Planner (credits removed) ============ */
 function planGoal(){
   const rec=students[currentStudent]; if(!rec)return;
-  const prevCGPA=Number($('prevCGPA').value)||0, prevCredits=Number($('prevCredits').value)||0, goal=Number($('goalCGPA').value)||0;
+  const prevCGPA=Number($('prevCGPA').value)||0, goal=Number($('goalCGPA').value)||0;
   const incSubs=rec.semesters.flatMap(sem=>sem.filter(s=>s.included));
-  const curQP=incSubs.reduce((a,s)=>a+gradePoint(s)*(s.credits||0),0);
-  const curCreds=incSubs.reduce((a,s)=>a+(s.credits||0),0);
-  const totalCredits=prevCredits+curCreds, requiredTotalQP=goal*totalCredits, requiredFromCurrent=requiredTotalQP-prevCGPA*prevCredits;
+  const curAvg = incSubs.length? (incSubs.reduce((a,s)=>a+gradePoint(s),0)/incSubs.length) : 0;
+
   const txt=[];
-  if(requiredFromCurrent<=curQP){ txt.push('Goal already met with current marks.'); }
+  if(curAvg>=goal){ txt.push('Goal already met with current marks.'); }
   else{
-    const remain=requiredFromCurrent-curQP, needGP=curCreds? (curQP+remain)/curCreds : 0;
+    /* naive uniform target GP across included subjects */
+    const needGP = goal;
     txt.push('Uniform required GP across current subjects: '+needGP.toFixed(3)+(needGP>10?' (⚠ >10 impossible)':''));
     txt.push('');
-    incSubs.forEach(s=>{ const reqFinal=Math.min(10,needGP)*GRADE_DIV; const neededSEEraw=Math.max(0, reqFinal-cie(s))*SEE_DIV; const needSEE=neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0; txt.push(s.name+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2)+' ; Achievable: '+(needGP<=10)); });
+    incSubs.forEach(s=>{
+      const reqFinal=Math.min(10,needGP)*GRADE_DIV; /* out of 100 */
+      /* CIE is clamped at 50; we try to meet final via SEE where possible */
+      const neededSEEraw=Math.max(0, reqFinal-cie(s))*SEE_DIV;
+      const needSEE=neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0;
+      txt.push(s.name+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2)+' ; Achievable: '+(needGP<=10));
+    });
   }
-  $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+' / '+prevCredits+' cr\n\n'+txt.join('\n');
+  $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+'\n\n'+txt.join('\n');
 }
 
 /* ============ Persistence ============ */
