@@ -43,9 +43,16 @@
   .auth{max-width:620px; margin:40px auto; padding:24px}
   .center{text-align:center}
   .mb16{margin-bottom:16px}
+  .mb8{margin-bottom:8px}
+  .mt8{margin-top:8px}
   .mt24{margin-top:24px}
   .hide{display:none}
-  canvas{max-width:100% !important}
+  .warn{color:#ffbf69}
+  /* Charts */
+  #overviewChart{width:100%; height:220px}
+  @media (min-width: 1100px){
+    #overviewChart{height:260px}
+  }
 </style>
 </head>
 <body>
@@ -56,12 +63,17 @@
       <div class="h1">📊 SGPA / CGPA Analyzer</div>
       <span class="chip">Web + Supabase</span>
     </div>
+    <div class="right">
+      <!-- Removed Import/Export buttons per request -->
+      <!-- Keep only logout -->
+      <button id="btnLogout" class="btn danger">Logout</button>
+    </div>
   </div>
 
   <!-- Auth / profile controls -->
   <div id="authPanel" class="glass auth">
     <div class="center mb16">
-      <div style="font-size:22px; font-weight:800; color:var(--aqua)">Profiles</div>
+      <div style="font-size:22px; font-weight:800; color:var(--aqua))">Profiles</div>
       <div class="muted">Create, load, or continue as guest. Data is stored in Supabase for accounts and in your browser for guests.</div>
       <div class="warn mt8" id="sbWarn"></div>
     </div>
@@ -92,11 +104,9 @@
         <div id="credBadge" class="chip">Credits: 0</div>
       </div>
       <div class="right">
-        <select id="studentSelect"></select>
-        <button id="btnNewStudent" class="btn">+ New Student</button>
-        <button id="btnSaveStudent" class="btn">Save Student</button>
-        <button id="btnLoadStudent" class="btn">Load Student</button>
-        <button id="btnLogout" class="btn danger">Logout</button>
+        <!-- Student management removed per request; keep hidden select to avoid code errors -->
+        <select id="studentSelect" style="display:none"></select>
+        <!-- Removed: + New Student / Save Student / Load Student -->
       </div>
     </div>
 
@@ -109,15 +119,24 @@
       <div class="glass card">
         <div style="font-weight:700" class="mb8">Goal planner</div>
         <div class="grid g-2">
-          <div><div class="muted mb8">Prev CGPA</div><input id="prevCGPA" value="0" inputmode="decimal" /></div>
-          <div><div class="muted mb8">Prev Credits</div><input id="prevCredits" value="0" inputmode="numeric" /></div>
-          <div><div class="muted mb8">Goal CGPA</div><input id="goalCGPA" value="9" inputmode="decimal" /></div>
+          <div>
+            <div class="muted mb8">Prev CGPA</div>
+            <input id="prevCGPA" value="0" inputmode="decimal" />
+          </div>
+          <div>
+            <div class="muted mb8">Prev Credits</div>
+            <input id="prevCredits" value="0" inputmode="numeric" />
+          </div>
+          <div>
+            <div class="muted mb8">Goal CGPA</div>
+            <input id="goalCGPA" value="9" inputmode="decimal" />
+          </div>
         </div>
         <button id="btnPlan" class="btn primary mt8">Plan Goal</button>
       </div>
       <div class="glass card">
         <div style="font-weight:700" class="mb8">Analytics</div>
-        <div id="analytics" style="white-space:pre-wrap; font-size:13px; line-height:1.35; max-height:220px; overflow:auto"></div>
+        <div id="analytics" style="white-space:pre-wrap; font-family:ui-monospace,Consolas,monaco; font-size:13px; line-height:1.35; max-height:220px; overflow:auto"></div>
       </div>
     </div>
 
@@ -144,8 +163,8 @@
   }
   function initApp(){
 
-/* ============ Supabase config (set yours!) ============ */
-const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co";       // e.g. https://xxxx.supabase.co
+/* ============ Supabase config (yours) ============ */
+const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubWRzdG96cnp4Zmd1bGZrZG9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTg2MTgsImV4cCI6MjA3NDczNDYxOH0.NaV-B-kMGB9wWnhB8fzUGg7zh3KXZqCSJSVSNYZ4ZwU";
 let supabase = null;
 try {
@@ -157,8 +176,7 @@ const sbWarn = document.getElementById('sbWarn');
 if (!supabase) sbWarn.textContent = 'Supabase is not configured. Using local storage only (Guest mode).';
 
 /* ============ Helpers ============ */
-const SALT='sgpa_app_salt_v1', DBKEY='sgpa_web_db_v2', AUTOSAVE='__autosave__';
-const toCSVRow = (arr)=>arr.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',');
+const DBKEY='sgpa_web_db_v2', AUTOSAVE='__autosave__';
 const loadLocal=()=>{try{const raw=localStorage.getItem(DBKEY); if(!raw)return{students:{}}; const db=JSON.parse(raw); db.students||={}; return db;}catch{return{students:{}};}}; 
 const saveLocal=(db)=>localStorage.setItem(DBKEY,JSON.stringify(db));
 
@@ -178,8 +196,8 @@ const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, t
 const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[[blankSubject()]]});
 
 /* ============ Supabase CRUD ============ */
-const EMAIL_SUFFIX = '@sgpa-demo.dev';   // any real TLD works; avoid @example.com
-const unameToEmail = (u) => u.includes('@') ? u : (u + EMAIL_SUFFIX);   
+const EMAIL_SUFFIX='@sgpa-demo.dev';
+const unameToEmail=(u)=> u.includes('@') ? u : (u + EMAIL_SUFFIX);
 async function sbRegister(username,password){
   if(!supabase)throw new Error('Supabase not configured');
   const email=unameToEmail(username);
@@ -226,19 +244,9 @@ $('btnLogin').onclick=async()=>{
 $('btnGuest').onclick=()=>{ currentUser='GUEST'; const db=loadLocal(); students=db.students||{}; if(!students[AUTOSAVE])students[AUTOSAVE]=blankStudent('guest'); currentStudent=AUTOSAVE; startApp(); };
 $('btnLogout').onclick=async()=>{ try{await persist();}catch{} await sbLogout(); appPanel.classList.add('hide'); authPanel.classList.remove('hide'); };
 
-$('btnNewStudent').onclick=async()=>{ const name=prompt('Enter new student id / name:'); if(!name)return; if(students[name]){alert('Student already exists');return;} students[name]=blankStudent(name); currentStudent=name; renderStudentsList(); renderAll(); await persist(); };
-$('btnSaveStudent').onclick=async()=>{ const name=prompt('Save as (id):', currentStudent||''); if(!name)return; const cur=students[currentStudent]; students[name]=JSON.parse(JSON.stringify(cur)); students[name].username=name; currentStudent=name; alert('Saved.'); renderStudentsList(); await persist(); };
-$('btnLoadStudent').onclick=()=>{ const names=Object.keys(students); if(!names.length){alert('No students found');return;} const name=prompt('Enter student id to load:\n'+names.join(', ')); if(!name||!students[name]){alert('Not found');return;} currentStudent=name; renderAll(); };
-$('btnExportStudent').onclick=()=>{ const rec=students[currentStudent]; if(!rec){alert('No student selected');return;} const json=JSON.stringify(rec,null,2); downloadFile(rec.username+'.json',json,'application/json'); };
-$('importJson').onchange=async(e)=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=async()=>{ try{ const rec=JSON.parse(r.result); if(!rec||!rec.username||!rec.semesters)throw new Error('Invalid'); students[rec.username]=rec; currentStudent=rec.username; renderStudentsList(); renderAll(); await persist(); alert('Imported.'); }catch{ alert('Invalid JSON'); } }; r.readAsText(f); };
-$('btnExportAll').onclick=()=>{ const rows=[['Semester','Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']]; const rec=students[currentStudent]; if(!rec)return; rec.semesters.forEach((sem,i)=>{ sem.forEach(s=>rows.push([i+1,s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits])); }); downloadFile(rec.username+'-all.csv', rows.map(toCSVRow).join('\n'), 'text/csv'); };
-$('btnPlan').onclick=()=>planGoal();
-$('btnAddSem').onclick=()=>{ const rec=students[currentStudent]; rec.semesters.push([blankSubject()]); renderAll(); };
-$('btnChartsAll').onclick=()=>openAllCharts();
-
 /* ============ Render ============ */
 function startApp(){ authPanel.classList.add('hide'); appPanel.classList.remove('hide'); renderStudentsList(); renderAll(); }
-function renderStudentsList(){ const sel=$('studentSelect'); sel.innerHTML=''; Object.keys(students).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); }); sel.value=currentStudent||''; sel.onchange=()=>{ currentStudent=sel.value; renderAll(); }; }
+function renderStudentsList(){ const sel=$('studentSelect'); if(!sel) return; sel.innerHTML=''; Object.keys(students).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); }); sel.value=currentStudent||''; sel.onchange=()=>{ currentStudent=sel.value; renderAll(); }; }
 function renderAll(){
   charts.forEach(c=>{ try{c.destroy();}catch{} }); charts=[];
   const rec=students[currentStudent]; if(!rec)return;
@@ -256,15 +264,24 @@ function renderSemester(sem,semIndex){
   const btnAdd=Object.assign(document.createElement('button'),{className:'btn',textContent:'+ Subject'});
   const btnCSV=Object.assign(document.createElement('button'),{className:'btn',textContent:'Export CSV'});
   const btnCharts=Object.assign(document.createElement('button'),{className:'btn',textContent:'Open Charts'});
-  hRight.append(btnAdd,btnCSV,btnCharts); header.append(hLeft,hRight);
+  const btnRemoveSem=Object.assign(document.createElement('button'),{className:'btn danger',textContent:'Remove Semester'});
+  btnRemoveSem.onclick=()=>{ if(confirm('Remove this semester?')){ const rec=students[currentStudent]; rec.semesters.splice(semIndex,1); renderAll(); } };
+  hRight.append(btnAdd,btnCSV,btnCharts,btnRemoveSem); header.append(hLeft,hRight);
   const table=document.createElement('table');
   table.innerHTML='<thead><tr><th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th><th>Task3</th><th>SEE</th><th>Credits</th><th>GP</th><th>Action</th></tr></thead><tbody id="tbody-'+semIndex+'"></tbody>';
   card.append(header,table);
   const tbody=table.querySelector('tbody');
 
   const mkCell=(el)=>{const td=document.createElement('td'); td.appendChild(el); return td;};
-  const mkNum=(val,min,max,step,cb)=>{ const i=Object.assign(document.createElement('input'),{type:'number',value:val,min:min,max:max,step:step,style:'width:84px'}); i.oninput=()=>{ cb(parseFloat(i.value)||0); refresh(); }; i.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault(); i.blur();} }; return i; };
-  const mkTxt=(val,cb)=>{ const i=Object.assign(document.createElement('input'),{value:val,style:'width:180px'}); i.oninput=()=>{ cb(i.value); persist(); }; i.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault(); i.blur();} }; return i; };
+  // <<< Keyboard-friendly numeric inputs: we update live, but re-render ONLY on blur/Enter >>>
+  const mkNum=(val,min,max,step,cb)=>{
+    const i=Object.assign(document.createElement('input'),{type:'number',value:val,min:min,max:max,step:step,inputMode:'decimal',style:'width:84px'});
+    i.oninput=()=>{ cb(parseFloat(i.value)||0); updateCGPAWidgets(); drawOverview(); persist(); }; // no full refresh
+    i.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); } };
+    i.onblur=()=>{ refresh(); };
+    return i;
+  };
+  const mkTxt=(val,cb)=>{ const i=Object.assign(document.createElement('input'),{value:val,style:'width:180px'}); i.oninput=()=>{ cb(i.value); persist(); }; i.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault(); i.blur();} }; i.onblur=()=>refresh(); return i; };
 
   const renderRows=()=>{ tbody.innerHTML=''; sem.forEach((s,subIndex)=>{ const tr=document.createElement('tr');
     const tdInc=document.createElement('td'); const inc=Object.assign(document.createElement('input'),{type:'checkbox',checked:!!s.included}); inc.onchange=()=>{ s.included=inc.checked; refresh(); }; tdInc.appendChild(inc);
@@ -287,7 +304,7 @@ function renderSemester(sem,semIndex){
   const refresh=()=>{ renderRows(); document.getElementById('sgpa-'+semIndex).textContent='SGPA: '+sgpa(sem).toFixed(3); updateCGPAWidgets(); drawOverview(); persist(); };
 
   btnAdd.onclick=()=>{ sem.push(blankSubject('Subject '+(sem.length+1))); refresh(); };
-  btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(toCSVRow).join('\n'), 'text/csv'); };
+  btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(r=>r.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',')).join('\n'), 'text/csv'); };
   btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1));
 
   renderRows();
@@ -314,7 +331,17 @@ function drawOverview(){
   const semSgpas=[], semCredits=[];
   rec.semesters.forEach(sem=>{ const inc=sem.filter(s=>s.included); const cred=inc.reduce((a,b)=>a+(b.credits||0),0); const qp=inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0); semSgpas.push(cred?qp/cred:0); semCredits.push(cred); });
   const cum=[]; let tq=prevG*prevC, tc=prevC; semSgpas.forEach((s,i)=>{ tq+=s*semCredits[i]; tc+=semCredits[i]; cum.push(tc?(tq/tc):0); });
-  const chart=new Chart(ctx,{type:'line',data:{labels:cum.map((_,i)=>'Sem '+(i+1)),datasets:[{label:'Cumulative CGPA',data:cum,fill:false,tension:.3}]},options:{responsive:true,scales:{y:{min:0,max:10}}}});
+
+  const grad = ctx.createLinearGradient(0,0,0,260);
+  grad.addColorStop(0,'rgba(0,255,229,0.45)');
+  grad.addColorStop(1,'rgba(183,132,255,0.05)');
+
+  const chart=new Chart(ctx,{
+    type:'line',
+    data:{labels:cum.map((_,i)=>'Sem '+(i+1)),
+      datasets:[{label:'Cumulative CGPA',data:cum,fill:true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{boxWidth:12}}}, scales:{y:{min:0,max:10,grid:{color:'rgba(255,255,255,.06)'}}, x:{grid:{display:false}}}}
+  });
   charts.push(chart);
 }
 
@@ -349,7 +376,7 @@ function openChartsForSemester(sem, title){
   const namesInc=names.filter((_,i)=>included[i]);
 
   const w=win; const make=(id,config)=>new w.Chart(w.document.getElementById(id).getContext('2d'),config);
-  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.3}]},options:{scales:{y:{min:0,max:100}}}});
+  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{scales:{y:{min:0,max:100}}}});
   make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{scales:{y:{min:0,max:100}}}});
   make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]}});
   make('c4',{type:'bar', data:{labels:names, datasets:[{label:'MSE1',data:mse1s,stack:'s'},{label:'MSE2',data:mse2s,stack:'s'},{label:'Tasks',data:tasks,stack:'s'},{label:'SEE/2',data:seeContrib,stack:'s'}]}, options:{scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
@@ -385,6 +412,9 @@ function planGoal(){
   $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+' / '+prevCredits+' cr\n\n'+txt.join('\n');
 }
 
+/* ============ Download helper (CSV) ============ */
+function downloadFile(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:type||'text/plain'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
+
 /* ============ Persistence ============ */
 async function persist(){
   const rec=students[currentStudent]; if(!rec)return;
@@ -393,9 +423,13 @@ async function persist(){
 }
 window.addEventListener('beforeunload', persist);
 
+/* top-level controls */
+document.getElementById('btnAddSem').onclick=()=>{ const rec=students[currentStudent]; rec.semesters.push([blankSubject()]); renderAll(); };
+document.getElementById('btnChartsAll').onclick=()=>openAllCharts();
+document.getElementById('btnPlan').onclick=()=>planGoal();
+
   } // end initApp
 })(); // IIFE
 </script>
 </body>
 </html>
-
