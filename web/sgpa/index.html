@@ -48,11 +48,9 @@
   .mt24{margin-top:24px}
   .hide{display:none}
   .warn{color:#ffbf69}
-  /* Charts */
-  #overviewChart{width:100%; height:220px}
-  @media (min-width: 1100px){
-    #overviewChart{height:260px}
-  }
+  /* Chart sizing fix */
+  #overviewChart{width:100% !important; max-height:220px;}
+  @media (min-width:1100px){ #overviewChart{max-height:260px;} }
 </style>
 </head>
 <body>
@@ -64,8 +62,6 @@
       <span class="chip">Web + Supabase</span>
     </div>
     <div class="right">
-      <!-- Removed Import/Export buttons per request -->
-      <!-- Keep only logout -->
       <button id="btnLogout" class="btn danger">Logout</button>
     </div>
   </div>
@@ -73,7 +69,7 @@
   <!-- Auth / profile controls -->
   <div id="authPanel" class="glass auth">
     <div class="center mb16">
-      <div style="font-size:22px; font-weight:800; color:var(--aqua))">Profiles</div>
+      <div style="font-size:22px; font-weight:800; color:var(--aqua)">Profiles</div>
       <div class="muted">Create, load, or continue as guest. Data is stored in Supabase for accounts and in your browser for guests.</div>
       <div class="warn mt8" id="sbWarn"></div>
     </div>
@@ -104,9 +100,7 @@
         <div id="credBadge" class="chip">Credits: 0</div>
       </div>
       <div class="right">
-        <!-- Student management removed per request; keep hidden select to avoid code errors -->
         <select id="studentSelect" style="display:none"></select>
-        <!-- Removed: + New Student / Save Student / Load Student -->
       </div>
     </div>
 
@@ -179,6 +173,7 @@ if (!supabase) sbWarn.textContent = 'Supabase is not configured. Using local sto
 const DBKEY='sgpa_web_db_v2', AUTOSAVE='__autosave__';
 const loadLocal=()=>{try{const raw=localStorage.getItem(DBKEY); if(!raw)return{students:{}}; const db=JSON.parse(raw); db.students||={}; return db;}catch{return{students:{}};}}; 
 const saveLocal=(db)=>localStorage.setItem(DBKEY,JSON.stringify(db));
+function downloadFile(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:type||'text/plain'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
 
 /* ============ Math/Domain ============ */
 const SEE_DIV=2, GRADE_DIV=10;
@@ -273,10 +268,9 @@ function renderSemester(sem,semIndex){
   const tbody=table.querySelector('tbody');
 
   const mkCell=(el)=>{const td=document.createElement('td'); td.appendChild(el); return td;};
-  // <<< Keyboard-friendly numeric inputs: we update live, but re-render ONLY on blur/Enter >>>
   const mkNum=(val,min,max,step,cb)=>{
     const i=Object.assign(document.createElement('input'),{type:'number',value:val,min:min,max:max,step:step,inputMode:'decimal',style:'width:84px'});
-    i.oninput=()=>{ cb(parseFloat(i.value)||0); updateCGPAWidgets(); drawOverview(); persist(); }; // no full refresh
+    i.oninput=()=>{ cb(parseFloat(i.value)||0); updateCGPAWidgets(); drawOverview(); persist(); };
     i.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); } };
     i.onblur=()=>{ refresh(); };
     return i;
@@ -340,7 +334,12 @@ function drawOverview(){
     type:'line',
     data:{labels:cum.map((_,i)=>'Sem '+(i+1)),
       datasets:[{label:'Cumulative CGPA',data:cum,fill:true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
-    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{boxWidth:12}}}, scales:{y:{min:0,max:10,grid:{color:'rgba(255,255,255,.06)'}}, x:{grid:{display:false}}}}
+    options:{
+      responsive:true,
+      maintainAspectRatio:true, /* keep aspect ratio to avoid vertical stretch */
+      plugins:{legend:{labels:{boxWidth:12}}},
+      scales:{y:{min:0,max:10,grid:{color:'rgba(255,255,255,.06)'}}, x:{grid:{display:false}}}
+    }
   });
   charts.push(chart);
 }
@@ -376,18 +375,20 @@ function openChartsForSemester(sem, title){
   const namesInc=names.filter((_,i)=>included[i]);
 
   const w=win; const make=(id,config)=>new w.Chart(w.document.getElementById(id).getContext('2d'),config);
-  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{scales:{y:{min:0,max:100}}}});
-  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{scales:{y:{min:0,max:100}}}});
-  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]}});
-  make('c4',{type:'bar', data:{labels:names, datasets:[{label:'MSE1',data:mse1s,stack:'s'},{label:'MSE2',data:mse2s,stack:'s'},{label:'Tasks',data:tasks,stack:'s'},{label:'SEE/2',data:seeContrib,stack:'s'}]}, options:{scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
+  const commonOpts={responsive:true,maintainAspectRatio:true}; /* apply to all sub charts */
+
+  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{...commonOpts,scales:{y:{min:0,max:100}}}});
+  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{...commonOpts,scales:{y:{min:0,max:100}}}});
+  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]} ,options:commonOpts});
+  make('c4',{type:'bar', data:{labels:names, datasets:[{label:'MSE1',data:mse1s,stack:'s'},{label:'MSE2',data:mse2s,stack:'s'},{label:'Tasks',data:tasks,stack:'s'},{label:'SEE/2',data:seeContrib,stack:'s'}]}, options:{...commonOpts,scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
   const bins=Math.min(10,Math.max(2,finals.length)), min=0, max=100, width=(max-min)/bins;
   const counts=new Array(bins).fill(0);
   finals.forEach(v=>{const idx=Math.min(bins-1,Math.max(0,Math.floor((v-min)/width))); counts[idx]++;});
   const labels=counts.map((_,i)=>(Math.round(min+i*width))+'-'+(Math.round(min+(i+1)*width)));
-  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Distribution', data:counts}]}});
+  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Distribution', data:counts}]}, options:commonOpts});
 
   const reg=linReg(cies,sees); const xs=[Math.min.apply(null,cies.concat([0])), Math.max.apply(null,cies.concat([100]))]; const ys=xs.map(x=>reg.m*x+reg.b);
-  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map((x,i)=>({x:x,y:sees[i]}))},{label:'Regression', data: xs.map((x,i)=>({x:x,y:ys[i]})), type:'line'}]}, options:{scales:{x:{title:{text:'CIE',display:true}}, y:{title:{text:'SEE',display:true}}}}});
+  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map((x,i)=>({x:x,y:sees[i]}))},{label:'Regression', data: xs.map((x,i)=>({x:x,y:ys[i]})), type:'line'}]}, options:{...commonOpts,scales:{x:{title:{text:'CIE',display:true}}, y:{title:{text:'SEE',display:true}}}}});
   w.document.title=title+' — r='+pearson(cies,sees).toFixed(3);
 }
 
@@ -411,9 +412,6 @@ function planGoal(){
   }
   $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+' / '+prevCredits+' cr\n\n'+txt.join('\n');
 }
-
-/* ============ Download helper (CSV) ============ */
-function downloadFile(name,content,type){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type:type||'text/plain'})); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
 
 /* ============ Persistence ============ */
 async function persist(){
