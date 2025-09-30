@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SGPA / CGPA Multi-Student Analyzer (Web)</title>
+<title>SGPA / CGPA Multi-Student Analyzer (Web + Supabase)</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#0b0f14; --panel:#0f1620; --card:#111a25; --text:#e9f2ff; --muted:#9fb3c8;
@@ -41,7 +42,6 @@
   .right{display:flex; gap:10px; align-items:center}
   .status{font-weight:700}
   .chip{display:inline-block; padding:4px 8px; border-radius:999px; background:#17314b; border:1px solid rgba(255,255,255,.12)}
-  /* Edge launcher (hidden until hover near left) */
   .edge{position:fixed; left:-176px; top:40%; transform:translateY(-50%); width:220px; height:48px;
         background:rgba(13,19,28,.92); border-right:1px solid rgba(0,255,229,.28); border-top-right-radius:12px; border-bottom-right-radius:12px;
         box-shadow:0 6px 18px rgba(0,0,0,.45); overflow:hidden; cursor:pointer; z-index:50; transition:left .25s ease}
@@ -50,32 +50,30 @@
   .edge .edge-row{display:flex; align-items:center; height:100%; gap:.75rem; padding:0 .85rem;}
   .edge .dot{width:10px;height:10px;border-radius:50%;background:var(--aqua); box-shadow:0 0 10px var(--aqua), 0 0 18px var(--aqua)}
   .edge a{color:#e8f1ff; text-decoration:none; font-weight:700}
-  /* Auth panel (simple local auth for profiles) */
-  .auth{max-width:520px; margin:40px auto; padding:24px}
+  .auth{max-width:620px; margin:40px auto; padding:24px}
   .center{text-align:center}
   .mb16{margin-bottom:16px}
   .mb8{margin-bottom:8px}
   .mt8{margin-top:8px}
   .mt24{margin-top:24px}
   .hide{display:none}
+  .warn{color:#ffbf69}
 </style>
 </head>
 <body>
 
-<!-- Edge launcher back to dashboard (only visible when mouse is near the left edge / on hover) -->
 <div class="edge" title="Back to Dashboard">
   <div class="edge-row">
     <span class="dot"></span>
-    <a href="../dashboard.html">Back to Dashboard</a>
+    <a href="#" onclick="return false;">SGPA Home</a>
   </div>
 </div>
 
 <div class="wrap">
-  <!-- Header -->
   <div class="row" style="justify-content:space-between; margin-bottom:18px">
     <div class="row">
       <div class="h1">📊 SGPA / CGPA Analyzer</div>
-      <span class="chip">Web Edition</span>
+      <span class="chip">Web + Supabase</span>
     </div>
     <div class="right">
       <button id="btnExportAll" class="btn">⬇ Export All CSV</button>
@@ -88,14 +86,16 @@
   <div id="authPanel" class="glass auth">
     <div class="center mb16">
       <div style="font-size:22px; font-weight:800; color:var(--aqua)">Profiles</div>
-      <div class="muted">Create, load, or continue as guest (data stored locally in your browser)</div>
+      <div class="muted">Create, load, or continue as guest. Data is stored in Supabase for accounts and in your browser for guests.</div>
+      <div class="warn mt8" id="sbWarn"></div>
     </div>
     <div class="grid g-2">
       <div class="card">
-        <div class="mb8" style="font-weight:700">Create Profile</div>
+        <div class="mb8" style="font-weight:700">Create Account</div>
         <input id="regUser" placeholder="Username (e.g., ayush)" class="mb8" />
         <input id="regPass" type="password" placeholder="Password" class="mb8" />
         <button id="btnRegister" class="btn primary">Create</button>
+        <div class="muted mt8" style="font-size:12px">Accounts use Supabase Auth under the hood. We create an email like <code>username@sgpa.local</code> for you.</div>
       </div>
       <div class="card">
         <div class="mb8" style="font-weight:700">Login</div>
@@ -171,11 +171,28 @@
 
 <script>
 /* ===========================
+   Supabase config — fill these!
+   =========================== */
+const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co"; // e.g. https://xxx.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubWRzdG96cnp4Zmd1bGZrZG9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTg2MTgsImV4cCI6MjA3NDczNDYxOH0.NaV-B-kMGB9wWnhB8fzUGg7zh3KXZqCSJSVSNYZ4ZwU"; // Public anon key
+let supabase = null;
+try{
+  if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+}catch(e){ console.warn('Supabase init error', e); }
+
+const sbWarn = document.getElementById('sbWarn');
+if (!supabase) {
+  sbWarn.textContent = 'Supabase is not configured. Using local storage only (Guest mode). Set SUPABASE_URL and SUPABASE_ANON_KEY in the HTML.';
+}
+
+/* ===========================
    Helpers (hash, storage, csv)
    =========================== */
 const SALT = 'sgpa_app_salt_v1';
-const DBKEY = 'sgpa_web_db_v1';    // { users:{u:{pwdHash}}, students:{id:StudentRecord} }
-const AUTOSAVE = '__autosave__';    // in case user didn't save to a name
+const DBKEY = 'sgpa_web_db_v2';   // local fallback
+const AUTOSAVE = '__autosave__';
 
 const sha256 = async (text) => {
   const data = new TextEncoder().encode(SALT + text);
@@ -184,16 +201,14 @@ const sha256 = async (text) => {
   return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
 };
 
-const loadDB = () => {
+const loadLocal = () => {
   try {
     const raw = localStorage.getItem(DBKEY);
-    if (!raw) return { users:{}, students:{} };
-    const db = JSON.parse(raw);
-    db.users ||= {}; db.students ||= {};
-    return db;
-  } catch { return { users:{}, students:{} }; }
+    if (!raw) return { students:{} };
+    const db = JSON.parse(raw); db.students ||= {}; return db;
+  } catch { return { students:{} }; }
 };
-const saveDB = (db) => localStorage.setItem(DBKEY, JSON.stringify(db));
+const saveLocal = (db) => localStorage.setItem(DBKEY, JSON.stringify(db));
 
 const downloadFile = (name, content, type='text/plain') => {
   const blob = new Blob([content], {type});
@@ -205,7 +220,7 @@ const downloadFile = (name, content, type='text/plain') => {
 
 const toCSVRow = (arr) => arr.map(v => {
   const s = String(v ?? '');
-  return /[,"\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+  return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
 }).join(',');
 
 /* ===========================
@@ -253,6 +268,7 @@ let currentUser = null;   // username or "GUEST"
 let currentStudent = null; // name/id string
 let students = {};        // { [name]: StudentRecord }
 let charts = [];          // keep Chart.js instances to destroy as needed
+let userSession = null;   // supabase session
 
 // StudentRecord: { username, created, prevCGPA, prevCredits, semesters: [ [Subject] ] }
 const blankSubject = (name='Subject') => ({
@@ -263,67 +279,143 @@ const blankStudent = (username='__new__') => ({
 });
 
 /* ===========================
+   Supabase: schema & CRUD
+   =========================== */
+/**
+ * SQL you can run in Supabase (SQL editor):
+ *
+ * create table if not exists students (
+ *   id uuid primary key default gen_random_uuid(),
+ *   owner uuid references auth.users(id) on delete cascade,
+ *   name text not null,
+ *   data jsonb not null,
+ *   created_at timestamptz default now(),
+ *   unique (owner, name)
+ * );
+ *
+ * create table if not exists profiles (
+ *   id uuid primary key references auth.users(id) on delete cascade,
+ *   username text unique not null
+ * );
+ */
+
+const unameToEmail = (u) => `${u}@sgpa.local`;
+
+async function sbRegister(username, password){
+  if (!supabase) throw new Error('Supabase not configured');
+  const email = unameToEmail(username);
+  const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
+  if (error) throw error;
+  // Save username in profiles
+  const user = data.user;
+  if (user) {
+    await supabase.from('profiles').upsert({ id: user.id, username: username });
+  }
+  return data;
+}
+
+async function sbLogin(username, password){
+  if (!supabase) throw new Error('Supabase not configured');
+  const email = unameToEmail(username);
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  userSession = data.session;
+  return data;
+}
+
+async function sbLogout(){
+  if (!supabase) return; await supabase.auth.signOut(); userSession = null;
+}
+
+async function sbLoadStudents(){
+  if (!supabase || !userSession) return {};
+  const { data, error } = await supabase.from('students').select('name, data').order('created_at');
+  if (error) throw error;
+  const out = {}; (data||[]).forEach(r=>{ out[r.name] = r.data; });
+  return out;
+}
+
+async function sbSaveStudent(name, rec){
+  if (!supabase || !userSession) return;
+  const { error } = await supabase.from('students').upsert({ name, data: rec });
+  if (error) throw error;
+}
+
+async function sbDeleteStudent(name){
+  if (!supabase || !userSession) return;
+  const { error } = await supabase.from('students').delete().eq('name', name);
+  if (error) throw error;
+}
+
+/* ===========================
    UI wiring
    =========================== */
 const $ = (id)=>document.getElementById(id);
-
-// Panels
 const authPanel = $('authPanel');
 const appPanel  = $('app');
 
-// Auth controls
 $('btnRegister').onclick = async () => {
   const u = $('regUser').value.trim(); const p = $('regPass').value;
   if(!u||!p) return alert('Enter username & password');
-  const db = loadDB();
-  if (db.users[u]) return alert('User exists');
-  db.users[u] = { pwdHash: await sha256(p) };
-  db.students[u] ||= blankStudent(u);
-  saveDB(db);
-  alert('Registered. You can login now.');
+  try{
+    if (!supabase) throw new Error('Supabase not configured');
+    await sbRegister(u,p);
+    alert('Registered. You can login now.');
+  }catch(e){
+    alert('Register error: ' + (e.message||e));
+  }
 };
 
 $('btnLogin').onclick = async () => {
   const u = $('logUser').value.trim(); const p = $('logPass').value;
-  const db = loadDB();
-  if (!db.users[u]) return alert('Unknown user');
-  const ok = (await sha256(p)) === db.users[u].pwdHash;
-  if (!ok) return alert('Wrong password');
-  currentUser = u;
-  students = db.students;
-  if (!students[u]) students[u] = blankStudent(u);
-  currentStudent = u;
-  startApp();
+  try{
+    if (!supabase) throw new Error('Supabase not configured');
+    await sbLogin(u,p);
+    currentUser = u;
+    students = await sbLoadStudents();
+    if (!Object.keys(students).length) {
+      students[u] = blankStudent(u);
+      await sbSaveStudent(u, students[u]);
+    }
+    currentStudent = Object.keys(students)[0];
+    startApp();
+  }catch(e){
+    alert('Login error: ' + (e.message||e));
+  }
 };
 
 $('btnGuest').onclick = () => {
   currentUser = 'GUEST';
-  const db = loadDB(); students = db.students || {};
+  const db = loadLocal(); students = db.students || {};
   if (!students[AUTOSAVE]) students[AUTOSAVE] = blankStudent('guest');
-  currentStudent = AUTOSAVE;
-  startApp();
+  currentStudent = AUTOSAVE; startApp();
 };
 
-// App top buttons
-$('btnLogout').onclick = () => { persist(); appPanel.classList.add('hide'); authPanel.classList.remove('hide'); };
-$('btnNewStudent').onclick = () => {
+$('btnLogout').onclick = async () => {
+  try{ await persist(); }catch{}
+  await sbLogout();
+  appPanel.classList.add('hide'); authPanel.classList.remove('hide');
+};
+
+$('btnNewStudent').onclick = async () => {
   const name = prompt('Enter new student id / name:'); if(!name) return;
   if (students[name]) return alert('Student already exists');
   students[name] = blankStudent(name);
   currentStudent = name;
-  renderStudentsList(); renderAll();
+  renderStudentsList(); renderAll(); await persist();
 };
-$('btnSaveStudent').onclick = () => {
+
+$('btnSaveStudent').onclick = async () => {
   const name = prompt('Save as (id):', currentStudent || '');
   if (!name) return;
-  // Clone current and put under name
   const cur = students[currentStudent];
   students[name] = JSON.parse(JSON.stringify(cur));
   students[name].username = name;
   currentStudent = name;
   alert('Saved.');
-  renderStudentsList();
+  renderStudentsList(); await persist();
 };
+
 $('btnLoadStudent').onclick = () => {
   const names = Object.keys(students);
   if (!names.length) return alert('No students found');
@@ -333,19 +425,18 @@ $('btnLoadStudent').onclick = () => {
 };
 
 $('btnExportStudent').onclick = () => {
-  const rec = students[currentStudent];
-  if (!rec) return alert('No student selected');
+  const rec = students[currentStudent]; if (!rec) return alert('No student selected');
   downloadFile(`${rec.username}.json`, JSON.stringify(rec, null, 2), 'application/json');
 };
-$('importJson').onchange = (e) => {
+$('importJson').onchange = async (e) => {
   const f = e.target.files[0]; if(!f) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const rec = JSON.parse(reader.result);
       if(!rec || !rec.username || !rec.semesters) throw new Error('Invalid');
       students[rec.username] = rec; currentStudent = rec.username; renderStudentsList(); renderAll();
-      alert('Imported.');
+      await persist(); alert('Imported.');
     } catch { alert('Invalid JSON'); }
   };
   reader.readAsText(f);
@@ -386,21 +477,17 @@ function renderStudentsList(){
   sel.onchange = ()=>{ currentStudent = sel.value; renderAll(); };
 }
 function renderAll(){
-  // destroy old charts
   charts.forEach(c => { try{ c.destroy(); }catch{} });
   charts = [];
 
   const rec = students[currentStudent]; if (!rec) return;
-  // top badges
   $('who').textContent = `Welcome, ${currentUser || 'Guest'}`;
   $('prevCGPA').value = rec.prevCGPA ?? 0;
   $('prevCredits').value = rec.prevCredits ?? 0;
 
-  // semesters DOM
   const host = $('semesters'); host.innerHTML = '';
   rec.semesters.forEach((sem, idx) => host.appendChild(renderSemester(sem, idx)));
 
-  // overview + CGPA badges
   updateCGPAWidgets();
   drawOverview();
   persist();
@@ -525,7 +612,6 @@ function updateCGPAWidgets(){
 function drawOverview(){
   const rec = students[currentStudent]; if(!rec) return;
   const ctx = $('overviewChart').getContext('2d');
-  // destroy previous instance on this canvas if any
   const existing = charts.find(c => c.ctx && c.ctx.canvas === ctx.canvas);
   if (existing) { try{ existing.destroy(); }catch{} charts = charts.filter(c => c!==existing); }
 
@@ -588,11 +674,12 @@ function openChartsForSemester(sem, title='Semester'){
   make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals, tension:.3}]},options:{scales:{y:{min:0,max:100}}}});
   make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{scales:{y:{min:0,max:100}}}});
   make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]}});
+  // stacked components
   make('c4',{type:'bar', data:{labels:names, datasets:[
-      {label:'MSE1', data:mse1s}, {label:'MSE2', data:mse2s}, {label:'Tasks', data:tasks}, {label:'SEE/2', data:seeContrib}
-  ]}, options:{scales:{y:{stacked:true}}});
-  make('c5',{type:'histogram'}); // Chart.js has no built-in histogram; fake via bar
-  // simple histogram
+      {label:'MSE1', data:mse1s, stack:'s'}, {label:'MSE2', data:mse2s, stack:'s'}, {label:'Tasks', data:tasks, stack:'s'}, {label:'SEE/2', data:seeContrib, stack:'s'}
+  ]}, options:{scales:{x:{stacked:true}, y:{stacked:true, min:0, max:100}}});
+
+  // histogram (bar) — simple binning
   const bins = Math.min(10, Math.max(2, finals.length));
   const min = 0, max = 100, width = (max-min)/bins;
   const counts = new Array(bins).fill(0);
@@ -612,7 +699,6 @@ function openChartsForSemester(sem, title='Semester'){
     }, options:{scales:{x:{title:{text:'CIE', display:true}}, y:{title:{text:'SEE', display:true}}}}
   );
 
-  // quick text correlation
   const r = pearson(cies, sees).toFixed(3);
   w.document.title = `${title} — r=${r}`;
 }
@@ -660,14 +746,19 @@ function planGoal(){
 /* ===========================
    Persistence
    =========================== */
-function persist(){
-  const db = loadDB();
-  db.students = students;
+async function persist(){
+  const rec = students[currentStudent]; if (!rec) return;
   // keep autosave mirror for guest
-  if (currentStudent && students[currentStudent]) {
-    db.students[AUTOSAVE] = JSON.parse(JSON.stringify(students[currentStudent]));
+  if (!userSession) {
+    const db = loadLocal();
+    db.students = students; db.students[AUTOSAVE] = JSON.parse(JSON.stringify(rec));
+    saveLocal(db);
+    return;
   }
-  saveDB(db);
+  // logged-in — save current student to Supabase
+  try{
+    await sbSaveStudent(currentStudent, rec);
+  }catch(e){ console.warn('Supabase save failed', e); }
 }
 window.addEventListener('beforeunload', persist);
 </script>
