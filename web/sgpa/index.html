@@ -352,14 +352,14 @@ function openChartsForSemester(sem, title){
     + '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"><'+'/script>'
     + '<div style="padding:16px; font-family:Inter,system-ui; background:#0b0f14; color:#e9f2ff">'
     + '<div style="font-weight:800; margin-bottom:12px; color:#00ffe5">'+title+' — Analytics</div>'
-    + '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px">'
-    + '<canvas id="c1" height="260"></canvas>'
-    + '<canvas id="c2" height="260"></canvas>'
-    + '<canvas id="c3" height="260"></canvas>'
-    + '<canvas id="c4" height="260"></canvas>'
-    + '<canvas id="c5" height="260"></canvas>'
-    + '<canvas id="c6" height="260"></canvas>'
-    + '</div></div>';
+    + <div style="display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(2, 1fr); gap:14px; height:85vh">
+      <canvas id="c1"></canvas>
+  <canvas id="c2"></canvas>
+  <canvas id="c3"></canvas>
+  <canvas id="c4"></canvas>
+  <canvas id="c5"></canvas>
+  <canvas id="c6"></canvas>
+</div>
   win.document.write(html);
 
   const names=sem.map(s=>s.name);
