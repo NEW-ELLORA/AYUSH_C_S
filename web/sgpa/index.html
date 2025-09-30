@@ -215,8 +215,8 @@ const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, t
 const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[[blankSubject()]]});
 
 /* ============ Supabase CRUD ============ */
-const EMAIL_SUFFIX='@sgpa-demo.dev';    
-const unameToEmail=(u)=> u.includes('@') ? u : (u + EMAIL_SUFFIX);
+const EMAIL_SUFFIX = '@sgpa-demo.dev';   // any real TLD works; avoid @example.com
+const unameToEmail = (u) => u.includes('@') ? u : (u + EMAIL_SUFFIX);   
 async function sbRegister(username,password){
   if(!supabase)throw new Error('Supabase not configured');
   const email=unameToEmail(username);
