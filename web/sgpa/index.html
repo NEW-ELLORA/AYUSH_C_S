@@ -336,7 +336,7 @@ function drawOverview(){
       datasets:[{label:'Cumulative CGPA',data:cum,fill:true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
     options:{
       responsive:true,
-      maintainAspectRatio:true, /* keep aspect ratio to avoid vertical stretch */
+      maintainAspectRatio:true, /* avoid vertical stretch */
       plugins:{legend:{labels:{boxWidth:12}}},
       scales:{y:{min:0,max:10,grid:{color:'rgba(255,255,255,.06)'}}, x:{grid:{display:false}}}
     }
@@ -350,16 +350,17 @@ function openChartsForSemester(sem, title){
     + '<title>'+title+' Charts</title>'
     + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
     + '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"><'+'/script>'
+    + '<style>html,body{height:100%;margin:0}*{box-sizing:border-box} .grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:14px;height:85vh} canvas{width:100% !important;height:100% !important;}</style>'
     + '<div style="padding:16px; font-family:Inter,system-ui; background:#0b0f14; color:#e9f2ff">'
     + '<div style="font-weight:800; margin-bottom:12px; color:#00ffe5">'+title+' — Analytics</div>'
-    + <div style="display:grid; grid-template-columns:repeat(3, 1fr); grid-template-rows:repeat(2, 1fr); gap:14px; height:85vh">
-      <canvas id="c1"></canvas>
-  <canvas id="c2"></canvas>
-  <canvas id="c3"></canvas>
-  <canvas id="c4"></canvas>
-  <canvas id="c5"></canvas>
-  <canvas id="c6"></canvas>
-</div>
+    + '<div class="grid">'
+    + '<canvas id="c1"></canvas>'
+    + '<canvas id="c2"></canvas>'
+    + '<canvas id="c3"></canvas>'
+    + '<canvas id="c4"></canvas>'
+    + '<canvas id="c5"></canvas>'
+    + '<canvas id="c6"></canvas>'
+    + '</div></div>';
   win.document.write(html);
 
   const names=sem.map(s=>s.name);
@@ -375,7 +376,7 @@ function openChartsForSemester(sem, title){
   const namesInc=names.filter((_,i)=>included[i]);
 
   const w=win; const make=(id,config)=>new w.Chart(w.document.getElementById(id).getContext('2d'),config);
-  const commonOpts={responsive:true,maintainAspectRatio:true}; /* apply to all sub charts */
+  const commonOpts={responsive:true,maintainAspectRatio:true}; /* every chart respects container size */
 
   make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{...commonOpts,scales:{y:{min:0,max:100}}}});
   make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{...commonOpts,scales:{y:{min:0,max:100}}}});
