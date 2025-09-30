@@ -127,7 +127,11 @@
             <input id="goalCGPA" value="9" inputmode="decimal" />
           </div>
         </div>
-        <button id="btnPlan" class="btn primary mt8">Plan Goal</button>
+        <div class="row mt8">
+          <button id="btnPlan" class="btn primary">Plan Goal</button>
+          <!-- NEW: per-subject prediction button -->
+          <button id="btnPredict" class="btn">Predict per-subject</button>
+        </div>
       </div>
       <div class="glass card">
         <div style="font-weight:700" class="mb8">Analytics</div>
@@ -317,7 +321,7 @@ function renderSemester(sem,semIndex){
   btnAdd.onclick=()=>{ sem.push(blankSubject('Subject '+(sem.length+1))); refresh(); };
   /* CSV includes your CIE value */
   btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(0), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3)])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(r=>r.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',')).join('\n'), 'text/csv'); };
-  btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1));
+  btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1)));
 
   renderRows();
   return card;
@@ -440,6 +444,92 @@ function planGoal(){
   $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+'\n\n'+txt.join('\n');
 }
 
+/* ============ NEW: Per-subject prediction (partial marks) ============ */
+function predictNeeds(){
+  const rec=students[currentStudent]; if(!rec)return;
+  const goal = Number($('goalCGPA').value)||0;
+  const needGP = goal;                         // same uniform GP target
+  const reqFinal = Math.min(10, needGP) * GRADE_DIV;   // target per-subject final (/100)
+  const curSem = rec.semesters[rec.semesters.length-1] || [];
+  const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+
+  // maxes for internals
+  const MAX = {mse1:20,mse2:20,task1:4,task2:4,task3:2, cie:50, see:100};
+
+  const lines = [];
+  lines.push('Prediction for latest semester to reach per-subject final ≈ '+reqFinal.toFixed(1)+'/100 (goal CGPA '+goal+')');
+  lines.push('');
+
+  curSem.forEach((s)=>{
+    if(!s.included){ return; }
+    // If user provided CIE, predict SEE only
+    if((Number(s.cie)||0) > 0){
+      const curCIE = clamp(Number(s.cie)||0, 0, 50);
+      const needSEEraw = Math.max(0, reqFinal - curCIE) * SEE_DIV; // because SEE/2
+      const needSEE = clamp(needSEEraw, 0, 100);
+      const ok = needSEE <= 100;
+      lines.push(`${s.name||'Subject'}: CIE ${curCIE}/50 fixed → SEE needed ≈ ${needSEE.toFixed(1)}/100 ${ok?'':'(⚠️ impossible)'}`);
+      return;
+    }
+
+    // No CIE yet: compute known internals and remaining capacities
+    const cur = {
+      mse1: clamp(Number(s.mse1)||0, 0, MAX.mse1),
+      mse2: clamp(Number(s.mse2)||0, 0, MAX.mse2),
+      task1: clamp(Number(s.task1)||0, 0, MAX.task1),
+      task2: clamp(Number(s.task2)||0, 0, MAX.task2),
+      task3: clamp(Number(s.task3)||0, 0, MAX.task3),
+      see:  clamp(Number(s.see)||0,  0, MAX.see),
+    };
+    const knownInternal = clamp(cur.mse1+cur.mse2+cur.task1+cur.task2+cur.task3, 0, 50);
+    const cap = {
+      mse1: MAX.mse1 - cur.mse1,
+      mse2: MAX.mse2 - cur.mse2,
+      task1: MAX.task1 - cur.task1,
+      task2: MAX.task2 - cur.task2,
+      task3: MAX.task3 - cur.task3
+    };
+    const totalCap = Math.max(0, cap.mse1+cap.mse2+cap.task1+cap.task2+cap.task3);
+
+    // how much more internal is needed (before SEE) to reach target
+    const needInternal = Math.max(0, reqFinal - knownInternal - (cur.see/SEE_DIV)); // SEE already entered contributes /2
+    let suggest = {mse1:cur.mse1, mse2:cur.mse2, task1:cur.task1, task2:cur.task2, task3:cur.task3, see:cur.see};
+
+    let leftInternal = needInternal;
+
+    if(totalCap > 0){
+      // distribute proportionally to remaining capacity
+      for(const k of ['mse1','mse2','task1','task2','task3']){
+        if(leftInternal <= 0) break;
+        const share = totalCap ? (cap[k] / totalCap) * needInternal : 0;
+        const add = Math.min(cap[k], share);
+        suggest[k] = clamp(suggest[k] + add, 0, MAX[k]);
+      }
+      // recompute achieved internal after distribution
+      const newInternal = clamp(suggest.mse1+suggest.mse2+suggest.task1+suggest.task2+suggest.task3, 0, 50);
+      leftInternal = Math.max(0, reqFinal - newInternal - (suggest.see/SEE_DIV));
+    }
+
+    // whatever is still missing must come from SEE
+    if(leftInternal > 0){
+      const addSEE = leftInternal * SEE_DIV;
+      suggest.see = clamp(suggest.see + addSEE, 0, 100);
+    }
+
+    const achievableFinal = Math.min(50, suggest.mse1+suggest.mse2+suggest.task1+suggest.task2+suggest.task3) + (suggest.see/SEE_DIV);
+    const ok = achievableFinal + 1e-6 >= reqFinal; // tiny epsilon
+
+    lines.push(
+      `${s.name||'Subject'}: target final ${reqFinal.toFixed(1)}/100`+
+      ` → aim MSE1≈${suggest.mse1.toFixed(1)}/20, MSE2≈${suggest.mse2.toFixed(1)}/20,`+
+      ` T1≈${suggest.task1.toFixed(1)}/4, T2≈${suggest.task2.toFixed(1)}/4, T3≈${suggest.task3.toFixed(1)}/2,`+
+      ` SEE≈${suggest.see.toFixed(1)}/100 ${ok?'':'(⚠️ even maxing internals/SEE may fall short)'}`
+    );
+  });
+
+  $('analytics').textContent = lines.join('\n');
+}
+
 /* ============ Persistence ============ */
 async function persist(){
   const rec=students[currentStudent]; if(!rec)return;
@@ -452,11 +542,12 @@ window.addEventListener('beforeunload', persist);
 document.getElementById('btnAddSem').onclick=()=>{ const rec=students[currentStudent]; rec.semesters.push([blankSubject()]); renderAll(); };
 document.getElementById('btnChartsAll').onclick=()=>openAllCharts();
 document.getElementById('btnPlan').onclick=()=>planGoal();
+/* NEW: wire up predictor */
+document.getElementById('btnPredict').onclick=()=>predictNeeds();
 
   } // end initApp
 })(); // IIFE
 </script>
 </body>
 </html>
-
 
