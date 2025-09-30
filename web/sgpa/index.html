@@ -92,14 +92,17 @@
     <div class="grid g-2">
       <div class="card">
         <div class="mb8" style="font-weight:700">Create Account</div>
-        <input id="regUser" placeholder="Username (e.g., ayush)" class="mb8" />
+        <input id="regUser" placeholder="Username or email (e.g., ayush or you@example.com)" class="mb8" />
         <input id="regPass" type="password" placeholder="Password" class="mb8" />
         <button id="btnRegister" class="btn primary">Create</button>
-        <div class="muted mt8" style="font-size:12px">Accounts use Supabase Auth under the hood. We create an email like <code>username@sgpa.local</code> for you.</div>
+        <div class="muted mt8" style="font-size:12px">
+          Accounts use Supabase Auth. You can enter a real email, or just a username—if you enter a username, we’ll use
+          <code>username@example.com</code> internally.
+        </div>
       </div>
       <div class="card">
         <div class="mb8" style="font-weight:700">Login</div>
-        <input id="logUser" placeholder="Username" class="mb8" />
+        <input id="logUser" placeholder="Username or email" class="mb8" />
         <input id="logPass" type="password" placeholder="Password" class="mb8" />
         <button id="btnLogin" class="btn primary">Login</button>
         <button id="btnGuest" class="btn mt8">Continue as Guest</button>
@@ -193,7 +196,7 @@ if (!supabase) sbWarn.textContent = 'Supabase is not configured. Using local sto
 /* ============ Helpers ============ */
 const SALT='sgpa_app_salt_v1', DBKEY='sgpa_web_db_v2', AUTOSAVE='__autosave__';
 const toCSVRow = (arr)=>arr.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',');
-const loadLocal=()=>{try{const raw=localStorage.getItem(DBKEY); if(!raw)return{students:{}}; const db=JSON.parse(raw); db.students||={}; return db;}catch{return{students:{}};}};
+const loadLocal=()=>{try{const raw=localStorage.getItem(DBKEY); if(!raw)return{students:{}}; const db=JSON.parse(raw); db.students||={}; return db;}catch{return{students:{}};}}; 
 const saveLocal=(db)=>localStorage.setItem(DBKEY,JSON.stringify(db));
 
 /* ============ Math/Domain ============ */
@@ -212,7 +215,8 @@ const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, t
 const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[[blankSubject()]]});
 
 /* ============ Supabase CRUD ============ */
-const unameToEmail=(u)=>u+'@sgpa.local';
+const EMAIL_SUFFIX='@example.com';
+const unameToEmail=(u)=> u.includes('@') ? u : (u + EMAIL_SUFFIX);
 async function sbRegister(username,password){
   if(!supabase)throw new Error('Supabase not configured');
   const email=unameToEmail(username);
@@ -431,3 +435,4 @@ window.addEventListener('beforeunload', persist);
 </script>
 </body>
 </html>
+
