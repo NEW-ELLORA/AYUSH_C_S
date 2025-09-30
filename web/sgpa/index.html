@@ -170,7 +170,6 @@
 </div>
 
 <script>
-// Ensure handlers are bound after DOM is fully ready
 (function(){
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
@@ -179,600 +178,256 @@
   }
   function initApp(){
 
-/* ===========================
-   Supabase config — fill these!
-   =========================== */
-const SUPABASE_URL = "YOUR_SUPABASE_URL"; // e.g. https://xxx.supabase.co
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // Public anon key
+/* ============ Supabase config (set yours!) ============ */
+const SUPABASE_URL = "YOUR_SUPABASE_URL";       // e.g. https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 let supabase = null;
-try{
-  if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+try {
+  if (SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_URL") {
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
-}catch(e){ console.warn('Supabase init error', e); }
-
+} catch(e) { console.warn("Supabase init error", e); }
 const sbWarn = document.getElementById('sbWarn');
-if (!supabase) {
-  sbWarn.textContent = 'Supabase is not configured. Using local storage only (Guest mode). Set SUPABASE_URL and SUPABASE_ANON_KEY in the HTML.';
-}
+if (!supabase) sbWarn.textContent = 'Supabase is not configured. Using local storage only (Guest mode).';
 
-/* ===========================
-   Helpers (hash, storage, csv)
-   =========================== */
-const SALT = 'sgpa_app_salt_v1';
-const DBKEY = 'sgpa_web_db_v2';   // local fallback
-const AUTOSAVE = '__autosave__';
+/* ============ Helpers ============ */
+const SALT='sgpa_app_salt_v1', DBKEY='sgpa_web_db_v2', AUTOSAVE='__autosave__';
+const toCSVRow = (arr)=>arr.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',');
+const loadLocal=()=>{try{const raw=localStorage.getItem(DBKEY); if(!raw)return{students:{}}; const db=JSON.parse(raw); db.students||={}; return db;}catch{return{students:{}};}};
+const saveLocal=(db)=>localStorage.setItem(DBKEY,JSON.stringify(db));
 
-const sha256 = async (text) => {
-  const data = new TextEncoder().encode(SALT + text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
-};
+/* ============ Math/Domain ============ */
+const SEE_DIV=2, GRADE_DIV=10;
+const cie=(s)=>s.mse1+s.mse2+s.task1+s.task2+s.task3;
+const seeScaled=(s)=>s.see/SEE_DIV;
+const finalMarks=(s)=>Math.max(0, cie(s)+seeScaled(s));
+const gradePoint=(s)=>finalMarks(s)/GRADE_DIV;
+const sgpa=(subjects)=>{const inc=subjects.filter(s=>s.included); const tot=inc.reduce((a,b)=>a+Number(b.credits||0),0); if(!tot)return 0; const qp=inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0); return qp/tot;};
+const pearson=(x,y)=>{if(x.length!==y.length||x.length<2)return 0; const n=x.length; const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n; let num=0,dxs=0,dys=0; for(let i=0;i<n;i++){const dx=x[i]-mx, dy=y[i]-my; num+=dx*dy; dxs+=dx*dx; dys+=dy*dy;} const den=Math.sqrt(dxs)*Math.sqrt(dys); return den?num/den:0;};
+const linReg=(x,y)=>{const n=x.length; if(n<2)return{m:0,b:y.reduce((a,b)=>a+b,0)/n||0}; const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n; let num=0,den=0; for(let i=0;i<n;i++){num+=(x[i]-mx)*(y[i]-my); den+=(x[i]-mx)**2;} const m=den?num/den:0; return {m,b:my-m*mx};};
 
-const loadLocal = () => {
-  try {
-    const raw = localStorage.getItem(DBKEY);
-    if (!raw) return { students:{} };
-    const db = JSON.parse(raw); db.students ||= {}; return db;
-  } catch { return { students:{} }; }
-};
-const saveLocal = (db) => localStorage.setItem(DBKEY, JSON.stringify(db));
+/* ============ App state ============ */
+let currentUser=null, currentStudent=null, students={}, charts=[], userSession=null;
+const blankSubject=(name='Subject')=>({name, mse1:0, mse2:0, task1:0, task2:0, task3:0, see:0, credits:3, included:true});
+const blankStudent=(username='__new__')=>({username, created:new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[[blankSubject()]]});
 
-const downloadFile = (name, content, type='text/plain') => {
-  const blob = new Blob([content], {type});
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement('a'), {href:url, download:name});
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-};
-
-const toCSVRow = (arr) => arr.map(v => {
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
-}).join(',');
-
-/* ===========================
-   Domain types & math
-   =========================== */
-const SEE_DIV = 2, GRADE_DIV = 10, SEM_PER_YEAR = 2;
-
-const cie = (s) => s.mse1 + s.mse2 + s.task1 + s.task2 + s.task3;
-const seeScaled = (s) => s.see / SEE_DIV;
-const finalMarks = (s) => Math.max(0, cie(s) + seeScaled(s));
-const gradePoint = (s) => finalMarks(s) / GRADE_DIV;
-
-const sgpa = (subjects) => {
-  const inc = subjects.filter(s => s.included);
-  const totCredits = inc.reduce((a,b)=>a + Number(b.credits||0), 0);
-  if (!totCredits) return 0;
-  const qp = inc.reduce((a,b)=> a + gradePoint(b)*(b.credits||0), 0);
-  return qp / totCredits;
-};
-
-const pearson = (x,y) => {
-  if (x.length !== y.length || x.length<2) return 0;
-  const n = x.length;
-  const mx = x.reduce((a,b)=>a+b,0)/n, my = y.reduce((a,b)=>a+b,0)/n;
-  let num = 0, denx=0, deny=0;
-  for (let i=0;i<n;i++){
-    const dx=x[i]-mx, dy=y[i]-my;
-    num += dx*dy; denx += dx*dx; deny += dy*dy;
-  }
-  const denom = Math.sqrt(denx)*Math.sqrt(deny);
-  return denom ? num/denom : 0;
-};
-const linReg = (x,y) => {
-  const n = x.length; if (n<2) return {m:0,b: y.reduce((a,b)=>a+b,0)/n || 0};
-  const mx = x.reduce((a,b)=>a+b,0)/n, my = y.reduce((a,b)=>a+b,0)/n;
-  let num=0, den=0;
-  for (let i=0;i<n;i++){ num += (x[i]-mx)*(y[i]-my); den += (x[i]-mx)**2; }
-  const m = den ? num/den : 0; const b = my - m*mx; return {m,b};
-};
-
-/* ===========================
-   App state
-   =========================== */
-let currentUser = null;   // username or "GUEST"
-let currentStudent = null; // name/id string
-let students = {};        // { [name]: StudentRecord }
-let charts = [];          // keep Chart.js instances to destroy as needed
-let userSession = null;   // supabase session
-
-// StudentRecord: { username, created, prevCGPA, prevCredits, semesters: [ [Subject] ] }
-const blankSubject = (name='Subject') => ({
-  name, mse1:0,mse2:0, task1:0,task2:0,task3:0, see:0, credits:3, included:true
-});
-const blankStudent = (username='__new__') => ({
-  username, created: new Date().toISOString(), prevCGPA:0, prevCredits:0, semesters:[ [blankSubject()] ]
-});
-
-/* ===========================
-   Supabase: schema & CRUD
-   =========================== */
-/**
- * SQL you can run in Supabase (SQL editor):
- *
- * create table if not exists students (
- *   id uuid primary key default gen_random_uuid(),
- *   owner uuid references auth.users(id) on delete cascade,
- *   name text not null,
- *   data jsonb not null,
- *   created_at timestamptz default now(),
- *   unique (owner, name)
- * );
- *
- * create table if not exists profiles (
- *   id uuid primary key references auth.users(id) on delete cascade,
- *   username text unique not null
- * );
- */
-
-const unameToEmail = (u) => `${u}@sgpa.local`;
-
-async function sbRegister(username, password){
-  if (!supabase) throw new Error('Supabase not configured');
-  const email = unameToEmail(username);
-  const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
-  if (error) throw error;
-  // Save username in profiles
-  const user = data.user;
-  if (user) {
-    await supabase.from('profiles').upsert({ id: user.id, username: username });
-  }
+/* ============ Supabase CRUD ============ */
+const unameToEmail=(u)=>u+'@sgpa.local';
+async function sbRegister(username,password){
+  if(!supabase)throw new Error('Supabase not configured');
+  const email=unameToEmail(username);
+  const {data,error}=await supabase.auth.signUp({email,password,options:{emailRedirectTo:location.origin}});
+  if(error)throw error;
+  const user=data.user;
+  if(user){ await supabase.from('profiles').upsert({id:user.id, username}); }
   return data;
 }
-
-async function sbLogin(username, password){
-  if (!supabase) throw new Error('Supabase not configured');
-  const email = unameToEmail(username);
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  userSession = data.session;
+async function sbLogin(username,password){
+  if(!supabase)throw new Error('Supabase not configured');
+  const email=unameToEmail(username);
+  const {data,error}=await supabase.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  userSession=data.session;
   return data;
 }
+async function sbLogout(){ if(supabase){ await supabase.auth.signOut(); userSession=null; } }
+async function sbLoadStudents(){ if(!supabase||!userSession)return{}; const {data,error}=await supabase.from('students').select('name, data').order('created_at'); if(error)throw error; const out={}; (data||[]).forEach(r=>out[r.name]=r.data); return out; }
+async function sbSaveStudent(name,rec){ if(!supabase||!userSession)return; const {error}=await supabase.from('students').upsert({name,data:rec}); if(error)throw error; }
 
-async function sbLogout(){
-  if (!supabase) return; await supabase.auth.signOut(); userSession = null;
-}
+/* ============ UI wiring ============ */
+const $=(id)=>document.getElementById(id);
+const authPanel=$('authPanel'), appPanel=$('app');
 
-async function sbLoadStudents(){
-  if (!supabase || !userSession) return {};
-  const { data, error } = await supabase.from('students').select('name, data').order('created_at');
-  if (error) throw error;
-  const out = {}; (data||[]).forEach(r=>{ out[r.name] = r.data; });
-  return out;
-}
-
-async function sbSaveStudent(name, rec){
-  if (!supabase || !userSession) return;
-  const { error } = await supabase.from('students').upsert({ name, data: rec });
-  if (error) throw error;
-}
-
-async function sbDeleteStudent(name){
-  if (!supabase || !userSession) return;
-  const { error } = await supabase.from('students').delete().eq('name', name);
-  if (error) throw error;
-}
-
-/* ===========================
-   UI wiring
-   =========================== */
-const $ = (id)=>document.getElementById(id);
-const authPanel = $('authPanel');
-const appPanel  = $('app');
-
-$('btnRegister').onclick = async () => {
-  const u = $('regUser').value.trim(); const p = $('regPass').value;
-  if(!u||!p) return alert('Enter username & password');
-  try{
-    if (!supabase) throw new Error('Supabase not configured');
-    await sbRegister(u,p);
-    alert('Registered. You can login now.');
-  }catch(e){
-    alert('Register error: ' + (e.message||e));
-  }
+$('btnRegister').onclick=async()=>{
+  const u=$('regUser').value.trim(), p=$('regPass').value;
+  if(!u||!p){ alert('Enter username & password'); return; }
+  try{ if(!supabase)throw new Error('Supabase not configured'); await sbRegister(u,p); alert('Registered. You can login now.'); }
+  catch(e){ alert('Register error: '+(e.message||e)); }
 };
-
-$('btnLogin').onclick = async () => {
-  const u = $('logUser').value.trim(); const p = $('logPass').value;
+$('btnLogin').onclick=async()=>{
+  const u=$('logUser').value.trim(), p=$('logPass').value;
   try{
-    if (!supabase) throw new Error('Supabase not configured');
+    if(!supabase)throw new Error('Supabase not configured');
     await sbLogin(u,p);
-    currentUser = u;
-    students = await sbLoadStudents();
-    if (!Object.keys(students).length) {
-      students[u] = blankStudent(u);
-      await sbSaveStudent(u, students[u]);
-    }
-    currentStudent = Object.keys(students)[0];
+    currentUser=u;
+    students=await sbLoadStudents();
+    if(!Object.keys(students).length){ students[u]=blankStudent(u); await sbSaveStudent(u,students[u]); }
+    currentStudent=Object.keys(students)[0];
     startApp();
-  }catch(e){
-    alert('Login error: ' + (e.message||e));
-  }
+  }catch(e){ alert('Login error: '+(e.message||e)); }
 };
+$('btnGuest').onclick=()=>{ currentUser='GUEST'; const db=loadLocal(); students=db.students||{}; if(!students[AUTOSAVE])students[AUTOSAVE]=blankStudent('guest'); currentStudent=AUTOSAVE; startApp(); };
+$('btnLogout').onclick=async()=>{ try{await persist();}catch{} await sbLogout(); appPanel.classList.add('hide'); authPanel.classList.remove('hide'); };
 
-$('btnGuest').onclick = () => {
-  currentUser = 'GUEST';
-  const db = loadLocal(); students = db.students || {};
-  if (!students[AUTOSAVE]) students[AUTOSAVE] = blankStudent('guest');
-  currentStudent = AUTOSAVE; startApp();
-};
+$('btnNewStudent').onclick=async()=>{ const name=prompt('Enter new student id / name:'); if(!name)return; if(students[name]){alert('Student already exists');return;} students[name]=blankStudent(name); currentStudent=name; renderStudentsList(); renderAll(); await persist(); };
+$('btnSaveStudent').onclick=async()=>{ const name=prompt('Save as (id):', currentStudent||''); if(!name)return; const cur=students[currentStudent]; students[name]=JSON.parse(JSON.stringify(cur)); students[name].username=name; currentStudent=name; alert('Saved.'); renderStudentsList(); await persist(); };
+$('btnLoadStudent').onclick=()=>{ const names=Object.keys(students); if(!names.length){alert('No students found');return;} const name=prompt('Enter student id to load:\n'+names.join(', ')); if(!name||!students[name]){alert('Not found');return;} currentStudent=name; renderAll(); };
+$('btnExportStudent').onclick=()=>{ const rec=students[currentStudent]; if(!rec){alert('No student selected');return;} const json=JSON.stringify(rec,null,2); downloadFile(rec.username+'.json',json,'application/json'); };
+$('importJson').onchange=async(e)=>{ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=async()=>{ try{ const rec=JSON.parse(r.result); if(!rec||!rec.username||!rec.semesters)throw new Error('Invalid'); students[rec.username]=rec; currentStudent=rec.username; renderStudentsList(); renderAll(); await persist(); alert('Imported.'); }catch{ alert('Invalid JSON'); } }; r.readAsText(f); };
+$('btnExportAll').onclick=()=>{ const rows=[['Semester','Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']]; const rec=students[currentStudent]; if(!rec)return; rec.semesters.forEach((sem,i)=>{ sem.forEach(s=>rows.push([i+1,s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits])); }); downloadFile(rec.username+'-all.csv', rows.map(toCSVRow).join('\n'), 'text/csv'); };
+$('btnPlan').onclick=()=>planGoal();
+$('btnAddSem').onclick=()=>{ const rec=students[currentStudent]; rec.semesters.push([blankSubject()]); renderAll(); };
+$('btnChartsAll').onclick=()=>openAllCharts();
 
-$('btnLogout').onclick = async () => {
-  try{ await persist(); }catch{}
-  await sbLogout();
-  appPanel.classList.add('hide'); authPanel.classList.remove('hide');
-};
-
-$('btnNewStudent').onclick = async () => {
-  const name = prompt('Enter new student id / name:'); if(!name) return;
-  if (students[name]) return alert('Student already exists');
-  students[name] = blankStudent(name);
-  currentStudent = name;
-  renderStudentsList(); renderAll(); await persist();
-};
-
-$('btnSaveStudent').onclick = async () => {
-  const name = prompt('Save as (id):', currentStudent || '');
-  if (!name) return;
-  const cur = students[currentStudent];
-  students[name] = JSON.parse(JSON.stringify(cur));
-  students[name].username = name;
-  currentStudent = name;
-  alert('Saved.');
-  renderStudentsList(); await persist();
-};
-
-$('btnLoadStudent').onclick = () => {
-  const names = Object.keys(students);
-  if (!names.length) return alert('No students found');
-  const name = prompt('Enter student id to load:\n' + names.join(', '));
-  if (!name || !students[name]) return alert('Not found');
-  currentStudent = name; renderAll();
-};
-
-$('btnExportStudent').onclick = () => {
-  const rec = students[currentStudent]; if (!rec) return alert('No student selected');
-  downloadFile(`${rec.username}.json`, JSON.stringify(rec, null, 2), 'application/json');
-};
-$('importJson').onchange = async (e) => {
-  const f = e.target.files[0]; if(!f) return;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const rec = JSON.parse(reader.result);
-      if(!rec || !rec.username || !rec.semesters) throw new Error('Invalid');
-      students[rec.username] = rec; currentStudent = rec.username; renderStudentsList(); renderAll();
-      await persist(); alert('Imported.');
-    } catch { alert('Invalid JSON'); }
-  };
-  reader.readAsText(f);
-};
-$('btnExportAll').onclick = () => {
-  const rows = [['Semester','Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']];
-  const rec = students[currentStudent]; if (!rec) return;
-  rec.semesters.forEach((sem, i) => {
-    sem.forEach(s => rows.push([
-      i+1, s.included?'Yes':'No', s.name, s.mse1, s.mse2, s.task1, s.task2, s.task3,
-      cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits
-    ]));
-  });
-  const csv = rows.map(toCSVRow).join('\n');
-  downloadFile(`${rec.username}-all.csv`, csv, 'text/csv');
-};
-
-$('btnPlan').onclick = () => planGoal();
-$('btnAddSem').onclick = () => { const rec = students[currentStudent]; rec.semesters.push([blankSubject()]); renderAll(); };
-$('btnChartsAll').onclick = () => openAllCharts();
-
-/* ===========================
-   App boot / render
-   =========================== */
-function startApp(){
-  authPanel.classList.add('hide');
-  appPanel.classList.remove('hide');
-  renderStudentsList();
-  renderAll();
-}
-function renderStudentsList(){
-  const sel = $('studentSelect');
-  sel.innerHTML = '';
-  Object.keys(students).forEach(k=>{
-    const o = document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o);
-  });
-  sel.value = currentStudent || '';
-  sel.onchange = ()=>{ currentStudent = sel.value; renderAll(); };
-}
+/* ============ Render ============ */
+function startApp(){ authPanel.classList.add('hide'); appPanel.classList.remove('hide'); renderStudentsList(); renderAll(); }
+function renderStudentsList(){ const sel=$('studentSelect'); sel.innerHTML=''; Object.keys(students).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); }); sel.value=currentStudent||''; sel.onchange=()=>{ currentStudent=sel.value; renderAll(); }; }
 function renderAll(){
-  charts.forEach(c => { try{ c.destroy(); }catch{} });
-  charts = [];
-
-  const rec = students[currentStudent]; if (!rec) return;
-  $('who').textContent = `Welcome, ${currentUser || 'Guest'}`;
-  $('prevCGPA').value = rec.prevCGPA ?? 0;
-  $('prevCredits').value = rec.prevCredits ?? 0;
-
-  const host = $('semesters'); host.innerHTML = '';
-  rec.semesters.forEach((sem, idx) => host.appendChild(renderSemester(sem, idx)));
-
-  updateCGPAWidgets();
-  drawOverview();
-  persist();
+  charts.forEach(c=>{ try{c.destroy();}catch{} }); charts=[];
+  const rec=students[currentStudent]; if(!rec)return;
+  $('who').textContent='Welcome, '+(currentUser||'Guest');
+  $('prevCGPA').value=rec.prevCGPA??0; $('prevCredits').value=rec.prevCredits??0;
+  const host=$('semesters'); host.innerHTML='';
+  rec.semesters.forEach((sem,idx)=>host.appendChild(renderSemester(sem,idx)));
+  updateCGPAWidgets(); drawOverview(); persist();
 }
+function renderSemester(sem,semIndex){
+  const card=document.createElement('div'); card.className='card mt24';
+  const header=document.createElement('div'); header.className='row'; header.style.justifyContent='space-between';
+  const hLeft=document.createElement('div'); hLeft.innerHTML='<b>Semester '+(semIndex+1)+'</b> <span class="status" id="sgpa-'+semIndex+'">SGPA: '+sgpa(sem).toFixed(3)+'</span>';
+  const hRight=document.createElement('div'); hRight.className='right';
+  const btnAdd=Object.assign(document.createElement('button'),{className:'btn',textContent:'+ Subject'});
+  const btnCSV=Object.assign(document.createElement('button'),{className:'btn',textContent:'Export CSV'});
+  const btnCharts=Object.assign(document.createElement('button'),{className:'btn',textContent:'Open Charts'});
+  hRight.append(btnAdd,btnCSV,btnCharts); header.append(hLeft,hRight);
+  const table=document.createElement('table');
+  table.innerHTML='<thead><tr><th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th><th>Task3</th><th>SEE</th><th>Credits</th><th>GP</th><th>Action</th></tr></thead><tbody id="tbody-'+semIndex+'"></tbody>';
+  card.append(header,table);
+  const tbody=table.querySelector('tbody');
 
-function renderSemester(sem, semIndex){
-  const card = document.createElement('div'); card.className='card mt24';
-  const header = document.createElement('div'); header.className='row'; header.style.justifyContent='space-between';
-  const hLeft = document.createElement('div'); hLeft.innerHTML = `<b>Semester ${semIndex+1}</b> <span class="status" id="sgpa-${semIndex}">SGPA: ${sgpa(sem).toFixed(3)}</span>`;
-  const hRight = document.createElement('div'); hRight.className='right';
-  const btnAdd = Object.assign(document.createElement('button'), {className:'btn', textContent:'+ Subject'});
-  const btnCSV = Object.assign(document.createElement('button'), {className:'btn', textContent:'Export CSV'});
-  const btnCharts = Object.assign(document.createElement('button'), {className:'btn', textContent:'Open Charts'});
-  hRight.append(btnAdd, btnCSV, btnCharts); header.append(hLeft,hRight);
+  const mkCell=(el)=>{const td=document.createElement('td'); td.appendChild(el); return td;};
+  const mkNum=(val,min,max,step,cb)=>{ const i=Object.assign(document.createElement('input'),{type:'number',value:val,min:min,max:max,step:step,style:'width:84px'}); i.oninput=()=>{ cb(parseFloat(i.value)||0); refresh(); }; i.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault(); i.blur();} }; return i; };
+  const mkTxt=(val,cb)=>{ const i=Object.assign(document.createElement('input'),{value:val,style:'width:180px'}); i.oninput=()=>{ cb(i.value); persist(); }; i.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault(); i.blur();} }; return i; };
 
-  const table = document.createElement('table');
-  table.innerHTML = `
-    <thead><tr>
-      <th>Inc</th><th>Subject</th><th>MSE1</th><th>MSE2</th><th>Task1</th><th>Task2</th>
-      <th>Task3</th><th>SEE</th><th>Credits</th><th>GP</th><th>Action</th>
-    </tr></thead>
-    <tbody id="tbody-${semIndex}"></tbody>`;
-  card.append(header, table);
+  const renderRows=()=>{ tbody.innerHTML=''; sem.forEach((s,subIndex)=>{ const tr=document.createElement('tr');
+    const tdInc=document.createElement('td'); const inc=Object.assign(document.createElement('input'),{type:'checkbox',checked:!!s.included}); inc.onchange=()=>{ s.included=inc.checked; refresh(); }; tdInc.appendChild(inc);
+    const cells=[
+      tdInc,
+      mkCell(mkTxt(s.name, v=>s.name=v)),
+      mkCell(mkNum(s.mse1,0,20,'0.5', v=>s.mse1=v)),
+      mkCell(mkNum(s.mse2,0,20,'0.5', v=>s.mse2=v)),
+      mkCell(mkNum(s.task1,0,4,'0.5', v=>s.task1=v)),
+      mkCell(mkNum(s.task2,0,4,'0.5', v=>s.task2=v)),
+      mkCell(mkNum(s.task3,0,2,'0.5', v=>s.task3=v)),
+      mkCell(mkNum(s.see,0,100,'1', v=>s.see=v)),
+      mkCell(mkNum(s.credits,1,30,'1', v=>s.credits=v)),
+      mkCell((()=>{ const div=document.createElement('div'); const gp=gradePoint(s); div.textContent=gp.toFixed(2); div.style.fontWeight='700'; div.style.color=gp>=9?'var(--green)':(gp>=7?'#e5e557':'var(--red)'); return div; })()),
+      mkCell((()=>{ const b=Object.assign(document.createElement('button'),{className:'btn danger',textContent:'Remove'}); b.onclick=()=>{ if(confirm('Remove '+s.name+'?')){ sem.splice(subIndex,1); refresh(); } }; return b; })())
+    ];
+    cells.forEach(c=>tr.appendChild(c)); tbody.appendChild(tr);
+  }); };
 
-  const tbody = table.querySelector('tbody');
-  const renderRows = () => {
-    tbody.innerHTML = '';
-    sem.forEach((s, subIndex) => {
-      const tr = document.createElement('tr');
+  const refresh=()=>{ renderRows(); document.getElementById('sgpa-'+semIndex).textContent='SGPA: '+sgpa(sem).toFixed(3); updateCGPAWidgets(); drawOverview(); persist(); };
 
-      const tdInc = document.createElement('td');
-      const inc = Object.assign(document.createElement('input'), {type:'checkbox', checked:!!s.included});
-      inc.onchange = ()=>{ s.included = inc.checked; refresh(); };
-      tdInc.appendChild(inc);
-
-      const mkNum = (val, min=0, max=100, step='0.5', cb) => {
-        const i = Object.assign(document.createElement('input'), {type:'number', value:val, min, max, step, style:'width:84px'});
-        i.oninput = ()=>{ cb(parseFloat(i.value)||0); refresh(); };
-        i.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); }};
-        return i;
-      };
-      const mkTxt = (val, cb) => {
-        const i = Object.assign(document.createElement('input'), {value:val, style:'width:180px'});
-        i.oninput = ()=>{ cb(i.value); persist(); };
-        i.onkeydown = (e)=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); }};
-        return i;
-      };
-
-      const cells = [
-        tdInc,
-        mkCell(mkTxt(s.name, v=>s.name=v)),
-        mkCell(mkNum(s.mse1,0,20,'0.5', v=>s.mse1=v)),
-        mkCell(mkNum(s.mse2,0,20,'0.5', v=>s.mse2=v)),
-        mkCell(mkNum(s.task1,0,4,'0.5',  v=>s.task1=v)),
-        mkCell(mkNum(s.task2,0,4,'0.5',  v=>s.task2=v)),
-        mkCell(mkNum(s.task3,0,2,'0.5',  v=>s.task3=v)),
-        mkCell(mkNum(s.see,0,100,'1',   v=>s.see=v)),
-        mkCell(mkNum(s.credits,1,30,'1',v=>s.credits=v)),
-        mkCell(() => {
-          const div = document.createElement('div');
-          const gp = gradePoint(s);
-          div.textContent = gp.toFixed(2);
-          div.style.fontWeight='700';
-          div.style.color = gp>=9 ? 'var(--green)' : gp>=7 ? '#e5e557' : 'var(--red)';
-          return div;
-        }()),
-        mkCell(() => {
-  const b = Object.assign(document.createElement('button'), { className: 'btn danger', textContent: 'Remove' });
-  b.onclick = () => { if (confirm(`Remove ${s.name}?`)) { sem.splice(subIndex,1); refresh(); } };
-  return b;
-}())
-      ];
-      cells.forEach(c=>tr.appendChild(c));
-      tbody.appendChild(tr);
-    });
-  };
-
-  const mkCell = (el) => { const td=document.createElement('td'); td.appendChild(el); return td; };
-  const refresh = () => {
-    renderRows();
-    document.getElementById(`sgpa-${semIndex}`).textContent = `SGPA: ${sgpa(sem).toFixed(3)}`;
-    updateCGPAWidgets(); drawOverview(); persist();
-  };
-
-  btnAdd.onclick = ()=>{ sem.push(blankSubject(`Subject ${sem.length+1}`)); refresh(); };
-  btnCSV.onclick = ()=>{
-    const rows = [['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']];
-    sem.forEach(s => rows.push([
-      s.included?'Yes':'No', s.name, s.mse1, s.mse2, s.task1, s.task2, s.task3,
-      cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits
-    ]));
-    const csv = rows.map(toCSVRow).join('\n');
-    downloadFile(`${students[currentStudent].username}-sem${semIndex+1}.csv`, csv, 'text/csv');
-  };
-  btnCharts.onclick = ()=> openChartsForSemester(sem, `Semester ${semIndex+1}`);
+  btnAdd.onclick=()=>{ sem.push(blankSubject('Subject '+(sem.length+1))); refresh(); };
+  btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP','Credits']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(2), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3), s.credits])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(toCSVRow).join('\n'), 'text/csv'); };
+  btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1));
 
   renderRows();
   return card;
 }
 
 function updateCGPAWidgets(){
-  const rec = students[currentStudent]; if(!rec) return;
-  const prevC = Number($('prevCredits').value)||0;
-  const prevG = Number($('prevCGPA').value)||0;
-  rec.prevCredits = prevC; rec.prevCGPA = prevG;
-
+  const rec=students[currentStudent]; if(!rec)return;
+  const prevC=Number($('prevCredits').value)||0, prevG=Number($('prevCGPA').value)||0;
+  rec.prevCredits=prevC; rec.prevCGPA=prevG;
   let curQP=0, curCredits=0;
-  rec.semesters.forEach(sem=>{
-    sem.filter(s=>s.included).forEach(s=>{
-      curQP += gradePoint(s)* (s.credits||0);
-      curCredits += (s.credits||0);
-    });
-  });
-  const totalCredits = prevC + curCredits;
-  const totalQP = prevG*prevC + curQP;
-  const CGPA = totalCredits ? (totalQP/totalCredits) : 0;
-
-  $('cgpaBadge').textContent = `CGPA: ${CGPA.toFixed(2)}`;
-  $('credBadge').textContent = `Credits: ${totalCredits}`;
+  rec.semesters.forEach(sem=>{ sem.filter(s=>s.included).forEach(s=>{ curQP+=gradePoint(s)*(s.credits||0); curCredits+=(s.credits||0); }); });
+  const totalCredits=prevC+curCredits, totalQP=prevG*prevC+curQP, CGPA=totalCredits?(totalQP/totalCredits):0;
+  $('cgpaBadge').textContent='CGPA: '+CGPA.toFixed(2);
+  $('credBadge').textContent='Credits: '+totalCredits;
 }
 
 function drawOverview(){
-  const rec = students[currentStudent]; if(!rec) return;
-  const ctx = $('overviewChart').getContext('2d');
-  const existing = charts.find(c => c.ctx && c.ctx.canvas === ctx.canvas);
-  if (existing) { try{ existing.destroy(); }catch{} charts = charts.filter(c => c!==existing); }
-
-  const prevC = rec.prevCredits||0, prevG = rec.prevCGPA||0;
-  const semSgpas = [];
-  const semCredits = [];
-  rec.semesters.forEach(sem=>{
-    const inc = sem.filter(s=>s.included);
-    const cred = inc.reduce((a,b)=>a+(b.credits||0),0);
-    const qp = inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0);
-    semSgpas.push(cred? qp/cred : 0);
-    semCredits.push(cred);
-  });
-  const cum = [];
-  let tq = prevG*prevC, tc = prevC;
-  semSgpas.forEach((s,i)=>{ tq += s*semCredits[i]; tc += semCredits[i]; cum.push(tc? tq/tc : 0); });
-
-  const chart = new Chart(ctx, {
-    type:'line',
-    data:{ labels: cum.map((_,i)=>`Sem ${i+1}`), datasets:[
-      { label:'Cumulative CGPA', data:cum, fill:false, tension:.3 }
-    ]},
-    options:{ responsive:true, scales:{y:{min:0,max:10}} }
-  });
+  const rec=students[currentStudent]; if(!rec)return;
+  const ctx=$('overviewChart').getContext('2d');
+  const existing=charts.find(c=>c.ctx&&c.ctx.canvas===ctx.canvas);
+  if(existing){ try{existing.destroy();}catch{} charts=charts.filter(c=>c!==existing); }
+  const prevC=rec.prevCredits||0, prevG=rec.prevCGPA||0;
+  const semSgpas=[], semCredits=[];
+  rec.semesters.forEach(sem=>{ const inc=sem.filter(s=>s.included); const cred=inc.reduce((a,b)=>a+(b.credits||0),0); const qp=inc.reduce((a,b)=>a+gradePoint(b)*(b.credits||0),0); semSgpas.push(cred?qp/cred:0); semCredits.push(cred); });
+  const cum=[]; let tq=prevG*prevC, tc=prevC; semSgpas.forEach((s,i)=>{ tq+=s*semCredits[i]; tc+=semCredits[i]; cum.push(tc?(tq/tc):0); });
+  const chart=new Chart(ctx,{type:'line',data:{labels:cum.map((_,i)=>'Sem '+(i+1)),datasets:[{label:'Cumulative CGPA',data:cum,fill:false,tension:.3}]},options:{responsive:true,scales:{y:{min:0,max:10}}}});
   charts.push(chart);
 }
 
-function openChartsForSemester(sem, title='Semester'){
-  const win = window.open('','_blank','width=1100,height=700');
-  win.document.write(`
-    <title>${title} Charts</title>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"><\/script>
-    <div style="padding:16px; font-family:Inter,system-ui; background:#0b0f14; color:#e9f2ff">
-      <div style="font-weight:800; margin-bottom:12px; color:#00ffe5">${title} — Analytics</div>
-      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px">
-        <canvas id="c1" height="260"></canvas>
-        <canvas id="c2" height="260"></canvas>
-        <canvas id="c3" height="260"></canvas>
-        <canvas id="c4" height="260"></canvas>
-        <canvas id="c5" height="260"></canvas>
-        <canvas id="c6" height="260"></canvas>
-      </div>
-    </div>
-  `);
-  const names = sem.map(s=>s.name);
-  const finals = sem.map(s=>finalMarks(s));
-  const included = sem.map(s=>!!s.included);
-  const cies = sem.map(s=>cie(s));
-  const sees = sem.map(s=>s.see);
-  const mse1s = sem.map(s=>s.mse1);
-  const mse2s = sem.map(s=>s.mse2);
-  const tasks = sem.map(s=>s.task1 + s.task2 + s.task3);
-  const seeContrib = sem.map(s=>seeScaled(s));
-  const finalsInc = finals.filter((_,i)=>included[i]);
-  const namesInc  = names.filter((_,i)=>included[i]);
+function openChartsForSemester(sem, title){
+  const win=window.open('','_blank','width=1100,height=700');
+  const html = ''
+    + '<title>'+title+' Charts</title>'
+    + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    + '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"><'+'/script>'
+    + '<div style="padding:16px; font-family:Inter,system-ui; background:#0b0f14; color:#e9f2ff">'
+    + '<div style="font-weight:800; margin-bottom:12px; color:#00ffe5">'+title+' — Analytics</div>'
+    + '<div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px">'
+    + '<canvas id="c1" height="260"></canvas>'
+    + '<canvas id="c2" height="260"></canvas>'
+    + '<canvas id="c3" height="260"></canvas>'
+    + '<canvas id="c4" height="260"></canvas>'
+    + '<canvas id="c5" height="260"></canvas>'
+    + '<canvas id="c6" height="260"></canvas>'
+    + '</div></div>';
+  win.document.write(html);
 
-  const w = win; const make = (id,config)=> new w.Chart(w.document.getElementById(id).getContext('2d'), config);
+  const names=sem.map(s=>s.name);
+  const finals=sem.map(s=>finalMarks(s));
+  const included=sem.map(s=>!!s.included);
+  const cies=sem.map(s=>cie(s));
+  const sees=sem.map(s=>s.see);
+  const mse1s=sem.map(s=>s.mse1);
+  const mse2s=sem.map(s=>s.mse2);
+  const tasks=sem.map(s=>s.task1+s.task2+s.task3);
+  const seeContrib=sem.map(s=>seeScaled(s));
+  const finalsInc=finals.filter((_,i)=>included[i]);
+  const namesInc=names.filter((_,i)=>included[i]);
 
-  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals, tension:.3}]},options:{scales:{y:{min:0,max:100}}}});
+  const w=win; const make=(id,config)=>new w.Chart(w.document.getElementById(id).getContext('2d'),config);
+  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.3}]},options:{scales:{y:{min:0,max:100}}}});
   make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{scales:{y:{min:0,max:100}}}});
   make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]}});
-  // stacked components
-  make('c4',{type:'bar', data:{labels:names, datasets:[
-      {label:'MSE1', data:mse1s, stack:'s'}, {label:'MSE2', data:mse2s, stack:'s'}, {label:'Tasks', data:tasks, stack:'s'}, {label:'SEE/2', data:seeContrib, stack:'s'}
-  ]}, options:{scales:{x:{stacked:true}, y:{stacked:true, min:0, max:100}}});
+  make('c4',{type:'bar', data:{labels:names, datasets:[{label:'MSE1',data:mse1s,stack:'s'},{label:'MSE2',data:mse2s,stack:'s'},{label:'Tasks',data:tasks,stack:'s'},{label:'SEE/2',data:seeContrib,stack:'s'}]}, options:{scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
+  const bins=Math.min(10,Math.max(2,finals.length)), min=0, max=100, width=(max-min)/bins;
+  const counts=new Array(bins).fill(0);
+  finals.forEach(v=>{const idx=Math.min(bins-1,Math.max(0,Math.floor((v-min)/width))); counts[idx]++;});
+  const labels=counts.map((_,i)=>(Math.round(min+i*width))+'-'+(Math.round(min+(i+1)*width)));
+  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Distribution', data:counts}]}});
 
-  // histogram (bar) — simple binning
-  const bins = Math.min(10, Math.max(2, finals.length));
-  const min = 0, max = 100, width = (max-min)/bins;
-  const counts = new Array(bins).fill(0);
-  finals.forEach(v => { const idx = Math.min(bins-1, Math.max(0, Math.floor((v-min)/width))); counts[idx]++; });
-  const labels = counts.map((_,i)=>`${Math.round(min+i*width)}-${Math.round(min+(i+1)*width)}`);
-  make('c5',{type:'bar', data:{labels, datasets:[{label:'Distribution', data:counts}]}});
-
-  // scatter CIE vs SEE + regression
-  const reg = linReg(cies, sees);
-  const xs = [Math.min(...cies,0), Math.max(...cies,100)];
-  const ys = xs.map(x=>reg.m*x+reg.b);
-  make('c6',{type:'scatter', data:{
-      datasets:[
-        {label:'CIE vs SEE', data: cies.map((x,i)=>({x, y:sees[i]}))},
-        {label:'Regression', data: xs.map((x,i)=>({x,y:ys[i]})), type:'line'}
-      ]
-    }, options:{scales:{x:{title:{text:'CIE', display:true}}, y:{title:{text:'SEE', display:true}}}}
-  );
-
-  const r = pearson(cies, sees).toFixed(3);
-  w.document.title = `${title} — r=${r}`;
+  const reg=linReg(cies,sees); const xs=[Math.min.apply(null,cies.concat([0])), Math.max.apply(null,cies.concat([100]))]; const ys=xs.map(x=>reg.m*x+reg.b);
+  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map((x,i)=>({x:x,y:sees[i]}))},{label:'Regression', data: xs.map((x,i)=>({x:x,y:ys[i]})), type:'line'}]}, options:{scales:{x:{title:{text:'CIE',display:true}}, y:{title:{text:'SEE',display:true}}}}});
+  w.document.title=title+' — r='+pearson(cies,sees).toFixed(3);
 }
 
-function openAllCharts(){
-  const rec = students[currentStudent]; if(!rec) return;
-  rec.semesters.forEach((sem, i)=> openChartsForSemester(sem, `Semester ${i+1}`));
-}
+function openAllCharts(){ const rec=students[currentStudent]; if(!rec)return; rec.semesters.forEach((sem,i)=>openChartsForSemester(sem,'Semester '+(i+1))); }
 
-/* ===========================
-   Goal Planner & Analytics
-   =========================== */
+/* ============ Goal Planner ============ */
 function planGoal(){
-  const rec = students[currentStudent]; if(!rec) return;
-  const prevCGPA = Number($('prevCGPA').value)||0;
-  const prevCredits = Number($('prevCredits').value)||0;
-  const goal = Number($('goalCGPA').value)||0;
-
-  const incSubs = rec.semesters.flatMap(sem => sem.filter(s=>s.included));
-  const curQP = incSubs.reduce((a,s)=>a+gradePoint(s)*(s.credits||0),0);
-  const curCreds = incSubs.reduce((a,s)=>a+(s.credits||0),0);
-
-  const totalCredits = prevCredits + curCreds;
-  const requiredTotalQP = goal * totalCredits;
-  const requiredFromCurrent = requiredTotalQP - prevCGPA*prevCredits;
-
-  const txt = [];
-  if (requiredFromCurrent <= curQP){
-    txt.push('Goal already met with current marks.');
-  } else {
-    const remain = requiredFromCurrent - curQP;
-    const needGP = curCreds ? (curQP + remain)/curCreds : 0;
-    txt.push(`Uniform required GP across current subjects: ${needGP.toFixed(3)}${needGP>10?' (⚠ >10 impossible)':''}`);
+  const rec=students[currentStudent]; if(!rec)return;
+  const prevCGPA=Number($('prevCGPA').value)||0, prevCredits=Number($('prevCredits').value)||0, goal=Number($('goalCGPA').value)||0;
+  const incSubs=rec.semesters.flatMap(sem=>sem.filter(s=>s.included));
+  const curQP=incSubs.reduce((a,s)=>a+gradePoint(s)*(s.credits||0),0);
+  const curCreds=incSubs.reduce((a,s)=>a+(s.credits||0),0);
+  const totalCredits=prevCredits+curCreds, requiredTotalQP=goal*totalCredits, requiredFromCurrent=requiredTotalQP-prevCGPA*prevCredits;
+  const txt=[];
+  if(requiredFromCurrent<=curQP){ txt.push('Goal already met with current marks.'); }
+  else{
+    const remain=requiredFromCurrent-curQP, needGP=curCreds? (curQP+remain)/curCreds : 0;
+    txt.push('Uniform required GP across current subjects: '+needGP.toFixed(3)+(needGP>10?' (⚠ >10 impossible)':''));
     txt.push('');
-    incSubs.forEach(s=>{
-      const reqFinal = Math.min(10, needGP) * GRADE_DIV;
-      const neededSEEraw = Math.max(0, reqFinal - cie(s)) * SEE_DIV;
-      const needSEE = neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0;
-      txt.push(`${s.name}: current GP ${gradePoint(s).toFixed(3)} → need final ${reqFinal.toFixed(2)} ; SEE needed: ${needSEE.toFixed(2)} ; Achievable: ${needGP<=10}`);
-    });
+    incSubs.forEach(s=>{ const reqFinal=Math.min(10,needGP)*GRADE_DIV; const neededSEEraw=Math.max(0, reqFinal-cie(s))*SEE_DIV; const needSEE=neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0; txt.push(s.name+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2)+' ; Achievable: '+(needGP<=10)); });
   }
-  $('analytics').textContent = `Goal planner summary:\nGoal CGPA: ${goal}, Prev CGPA: ${prevCGPA} / ${prevCredits} cr\n\n` + txt.join('\n');
+  $('analytics').textContent='Goal planner summary:\nGoal CGPA: '+goal+', Prev CGPA: '+prevCGPA+' / '+prevCredits+' cr\n\n'+txt.join('\n');
 }
 
-/* ===========================
-   Persistence
-   =========================== */
+/* ============ Persistence ============ */
 async function persist(){
-  const rec = students[currentStudent]; if (!rec) return;
-  // keep autosave mirror for guest
-  if (!userSession) {
-    const db = loadLocal();
-    db.students = students; db.students[AUTOSAVE] = JSON.parse(JSON.stringify(rec));
-    saveLocal(db);
-    return;
-  }
-  // logged-in — save current student to Supabase
-  try{
-    await sbSaveStudent(currentStudent, rec);
-  }catch(e){ console.warn('Supabase save failed', e); }
+  const rec=students[currentStudent]; if(!rec)return;
+  if(!userSession){ const db=loadLocal(); db.students=students; db.students[AUTOSAVE]=JSON.parse(JSON.stringify(rec)); saveLocal(db); return; }
+  try{ await sbSaveStudent(currentStudent,rec); }catch(e){ console.warn('Supabase save failed',e); }
 }
 window.addEventListener('beforeunload', persist);
-  }
-})();
+
+  } // end initApp
+})(); // IIFE
 </script>
 </body>
 </html>
-
