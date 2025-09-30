@@ -33,7 +33,7 @@
   table{width:100%; border-collapse:collapse}
   th,td{border-bottom:1px solid rgba(255,255,255,.08); padding:8px}
   th{text-align:left; color:#d6e4ff; font-weight:600}
-  .h1{font-size:28px; font-weight:800; letter-spacing:.2px; color:var(--aqua); text-shadow:0 0 10px rgba(0,255,229,.5), 0 0 22px rgba(183,132,255,.3)}
+  .h1{font-size:28px; font-weight:800; letter-spacing:.2px; color:#00ffe5; text-shadow:0 0 10px rgba(0,255,229,.5), 0 0 22px rgba(183,132,255,.3)}
   .muted{color:var(--muted)}
   .card{background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px}
   .grid{display:grid; gap:16px}
@@ -163,8 +163,8 @@
   function initApp(){
 
 /* ============ Supabase config (yours) ============ */
-const SUPABASE_URL = "https://xnmdstozrzxfgulfkdoh.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhubWRzdG96cnp4Zmd1bGZrZG9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNTg2MTgsImV4cCI6MjA3NDczNDYxOH0.NaV-B-kMGB9wWnhB8fzUGg7zh3KXZqCSJSVSNYZ4ZwU";
+const SUPABASE_URL = "ht";
+const SUPABASE_ANON_KEY = "e";
 let supabase = null;
 try {
   if (SUPABASE_URL && SUPABASE_URL !== "YOUR_SUPABASE_URL") {
@@ -321,7 +321,7 @@ function renderSemester(sem,semIndex){
   btnAdd.onclick=()=>{ sem.push(blankSubject('Subject '+(sem.length+1))); refresh(); };
   /* CSV includes your CIE value */
   btnCSV.onclick=()=>{ const rows=[['Include','Subject','MSE1','MSE2','Task1','Task2','Task3','CIE','SEE','SEE_scaled','Final(100)','GP']]; sem.forEach(s=>rows.push([s.included?'Yes':'No',s.name,s.mse1,s.mse2,s.task1,s.task2,s.task3, cie(s).toFixed(0), s.see, seeScaled(s).toFixed(2), finalMarks(s).toFixed(2), gradePoint(s).toFixed(3)])); downloadFile(students[currentStudent].username+'-sem'+(semIndex+1)+'.csv', rows.map(r=>r.map(v=>{const s=String(v??''); return /[",\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;}).join(',')).join('\n'), 'text/csv'); };
-  btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1)));
+  btnCharts.onclick=()=>openChartsForSemester(sem, 'Semester '+(semIndex+1));
 
   renderRows();
   return card;
@@ -435,7 +435,8 @@ function planGoal(){
     txt.push('Uniform required GP across current subjects: '+needGP.toFixed(3)+(needGP>10?' (⚠ >10 impossible)':''));
     txt.push('');
     incSubs.forEach(s=>{
-      const reqFinal=Math.min(10,needGP)*GRADE_DIV; /* out of 100 */
+      const reqFinal=Math.min(10,needGP)*G
+RADE_DIV; /* out of 100 */
       const neededSEEraw=Math.max(0, reqFinal-cie(s))*SEE_DIV;
       const needSEE=neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0;
       txt.push(s.name+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2)+' ; Achievable: '+(needGP<=10));
