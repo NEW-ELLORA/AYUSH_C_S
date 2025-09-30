@@ -563,11 +563,11 @@ function renderSemester(sem, semIndex){
           div.style.color = gp>=9 ? 'var(--green)' : gp>=7 ? '#e5e557' : 'var(--red)';
           return div;
         }()),
-        mkCell(()=>{
-          const b = Object.assign(document.createElement('button'), {className:'btn danger', textContent:'Remove'});
-          b.onclick= ()=>{ if(confirm(`Remove ${s.name}?`)){ sem.splice(subIndex,1); refresh(); } };
-          return b;
-        }())
+        mkCell(() => {
+  const b = Object.assign(document.createElement('button'), { className: 'btn danger', textContent: 'Remove' });
+  b.onclick = () => { if (confirm(`Remove ${s.name}?`)) { sem.splice(subIndex,1); refresh(); } };
+  return b;
+}())
       ];
       cells.forEach(c=>tr.appendChild(c));
       tbody.appendChild(tr);
