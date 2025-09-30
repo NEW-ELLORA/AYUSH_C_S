@@ -350,7 +350,7 @@ function drawOverview(){
   const chart=new Chart(ctx,{
     type:'line',
     data:{labels:cum.map((_,i)=>'Sem '+(i+1)),
-      datasets:[{label:'Cumulative CGPA',data:cum,fill=true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
+      datasets:[{label:'Cumulative CGPA',data:cum,fill: true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
     options:{
       responsive:true,
       maintainAspectRatio:true,
@@ -416,6 +416,7 @@ function openChartsForSemester(sem, title){
   w.document.title=title+' — r='+pearson(cies,sees).toFixed(3);
 }
 
+function openCharts(){/* legacy no-op */} /* keep if referenced somewhere */
 function openAllCharts(){ const rec=students[currentStudent]; if(!rec)return; rec.semesters.forEach((sem,i)=>openChartsForSemester(sem,'Semester '+(i+1))); }
 
 /* ============ Goal Planner (credits removed) ============ */
