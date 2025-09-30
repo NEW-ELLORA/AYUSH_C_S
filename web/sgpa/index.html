@@ -268,11 +268,15 @@ function renderSemester(sem,semIndex){
   const tbody=table.querySelector('tbody');
 
   const mkCell=(el)=>{const td=document.createElement('td'); td.appendChild(el); return td;};
+  /* STRICT bounds + keyboard friendly number input */
   const mkNum=(val,min,max,step,cb)=>{
     const i=Object.assign(document.createElement('input'),{type:'number',value:val,min:min,max:max,step:step,inputMode:'decimal',style:'width:84px'});
-    i.oninput=()=>{ cb(parseFloat(i.value)||0); updateCGPAWidgets(); drawOverview(); persist(); };
+    const clamp=(v)=>{ if(Number.isNaN(v)) return min; if(v<min) v=min; if(v>max) v=max; return v; };
+    const update=()=>{ let v=parseFloat(i.value); v=clamp(v); i.value=String(v); cb(v); updateCGPAWidgets(); drawOverview(); persist(); };
+    i.addEventListener('input',update);
+    i.addEventListener('blur',update);
+    i.addEventListener('wheel',e=>{ e.preventDefault(); }, {passive:false});
     i.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); i.blur(); } };
-    i.onblur=()=>{ refresh(); };
     return i;
   };
   const mkTxt=(val,cb)=>{ const i=Object.assign(document.createElement('input'),{value:val,style:'width:180px'}); i.oninput=()=>{ cb(i.value); persist(); }; i.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault(); i.blur();} }; i.onblur=()=>refresh(); return i; };
@@ -432,3 +436,4 @@ document.getElementById('btnPlan').onclick=()=>planGoal();
 </script>
 </body>
 </html>
+
