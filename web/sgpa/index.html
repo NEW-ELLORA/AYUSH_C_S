@@ -353,25 +353,30 @@ function drawOverview(){
   const chart=new Chart(ctx,{
     type:'line',
     data:{labels:cum.map((_,i)=>'Sem '+(i+1)),
-      datasets:[{label:'Cumulative CGPA',data:cum,fill: true,backgroundColor:grad,borderColor:'#00ffe5',tension:.35,pointRadius:3,pointHoverRadius:5}]},
+      datasets:[{label:'Cumulative CGPA',data:cum,fill: true,backgroundColor:grad,borderColor:'#38e4ff',borderWidth:3,tension:.35,pointRadius:3,pointHoverRadius:6}]},
     options:{
       responsive:true,
       maintainAspectRatio:true,
-      plugins:{legend:{labels:{boxWidth:12}}},
-      scales:{y:{min:0,max:10,grid:{color:'rgba(255,255,255,.06)'}}, x:{grid:{display:false}}}
+      plugins:{legend:{labels:{boxWidth:12,color:'#e9f2ff'}}, tooltip:{backgroundColor:'rgba(0,0,0,0.8)'}},
+      scales:{
+        y:{min:0,max:10,ticks:{color:'#cfe8ff'},grid:{color:'rgba(255,255,255,.18)'}},
+        x:{ticks:{color:'#cfe8ff'},grid:{display:false}}
+      }
     }
   });
   charts.push(chart);
 }
 
 function openChartsForSemester(sem, title){
-  const win=window.open('','_blank','width=1100,height=700');
+  const win=window.open('','_blank','width=1220,height=820');
   const html = ''
-    + '<title>'+title+' Charts</title>'
+    + '<title>'+title+' — Analytics</title>'
     + '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
     + '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"><'+'/script>'
-    + '<style>html,body{height:100%;margin:0}*{box-sizing:border-box} .grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:14px;height:85vh} canvas{width:100% !important;height:100% !important;}</style>'
-    + '<div style="padding:16px; font-family:Inter,system-ui; background:#0b0f14; color:#e9f2ff">'
+    + '<style>html,body{height:100%;margin:0;background:#0b0f14;color:#e9f2ff;font-family:Inter,system-ui}*{box-sizing:border-box}'
+    + '.grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:14px;height:85vh;padding:12px}'
+    + 'canvas{width:100% !important;height:100% !important;background:#0f1620;border:1px solid rgba(255,255,255,.08);border-radius:10px;}</style>'
+    + '<div style="padding:16px;">'
     + '<div style="font-weight:800; margin-bottom:12px; color:#00ffe5">'+title+' — Analytics</div>'
     + '<div class="grid">'
     + '<canvas id="c1"></canvas>'
@@ -380,7 +385,20 @@ function openChartsForSemester(sem, title){
     + '<canvas id="c4"></canvas>'
     + '<canvas id="c5"></canvas>'
     + '<canvas id="c6"></canvas>'
-    + '</div></div>';
+    + '</div></div>'
+    + '<script>'
+    + "Chart.defaults.color='#e9f2ff';"
+    + "Chart.defaults.font.size=13;"
+    + "Chart.defaults.borderColor='rgba(255,255,255,0.18)';"
+    + "const gridCol='rgba(255,255,255,0.18)';"
+    + "const tickCol='#cfe8ff';"
+    + "const lineCol='#38e4ff';"
+    + "const barCol='rgba(56,228,255,0.75)';"
+    + "const barCol2='rgba(183,132,255,0.75)';"
+    + "const barCol3='rgba(34,197,94,0.75)';"
+    + "const barCol4='rgba(251,191,36,0.75)';"
+    + "const barCol5='rgba(248,113,113,0.75)';"
+    + '</script>';
   win.document.write(html);
 
   const names=sem.map(s=>s.name);
@@ -396,25 +414,29 @@ function openChartsForSemester(sem, title){
   const namesInc=names.filter((_,i)=>included[i]);
 
   const w=win; const make=(id,config)=>new w.Chart(w.document.getElementById(id).getContext('2d'),config);
-  const commonOpts={responsive:true,maintainAspectRatio:true};
+  const commonScales = {
+    x:{ticks:{color:w.tickCol},grid:{color:'rgba(255,255,255,0.12)'}},
+    y:{ticks:{color:w.tickCol},grid:{color:w.gridCol}}
+  };
+  const opts=(extra={})=>({responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#e9f2ff'}},title:{display:!!extra.title,text:extra.title,color:'#e9f2ff',font:{weight:'700'}}},scales:extra.scales||commonScales});
 
-  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,tension:.35}]},options:{...commonOpts,scales:{y:{min:0,max:100}}}});
-  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals}]} ,options:{...commonOpts,scales:{y:{min:0,max:100}}}});
-  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1]}]} ,options:commonOpts});
+  make('c1',{type:'line',data:{labels:names,datasets:[{label:'Final marks',data:finals,borderColor:w.lineCol,backgroundColor:'rgba(56,228,255,0.2)',borderWidth:3,pointRadius:3,tension:.35}]},options:opts({title:'Final marks (Line)',scales:{...commonScales,y:{...commonScales.y,min:0,max:100}})});
+  make('c2',{type:'bar', data:{labels:names,datasets:[{label:'Final marks',data:finals,backgroundColor:w.barCol,borderWidth:0}]},options:opts({title:'Final marks (Bar)',scales:{...commonScales,y:{...commonScales.y,min:0,max:100}}})});
+  make('c3',{type:'pie', data:{labels:namesInc, datasets:[{data: finalsInc.length?finalsInc:[1],backgroundColor:[w.barCol,w.barCol2,w.barCol3,w.barCol4,w.barCol5]}]}, options:{plugins:{legend:{position:'bottom',labels:{color:'#e9f2ff'}},title:{display:true,text:'Final share (Pie)'}},responsive:true}});
   make('c4',{type:'bar', data:{labels:names, datasets:[
-      {label:'MSE1',data:mse1s,stack:'s'},
-      {label:'MSE2',data:mse2s,stack:'s'},
-      {label:'Tasks (T1+T2+T3)',data:tasks,stack:'s'},
-      {label:'SEE/2',data:seeContrib,stack:'s'}]},
-    options:{...commonOpts,scales:{x:{stacked:true}, y:{stacked:true,min:0,max:100}}}});
+      {label:'MSE1',data:mse1s,stack:'s',backgroundColor:w.barCol},
+      {label:'MSE2',data:mse2s,stack:'s',backgroundColor:w.barCol2},
+      {label:'Tasks (T1+T2+T3)',data:tasks,stack:'s',backgroundColor:w.barCol3},
+      {label:'SEE/2',data:seeContrib,stack:'s',backgroundColor:w.barCol5}]},
+    options:opts({title:'Component stack (to 100)',scales:{x:{stacked:true,ticks:{color:w.tickCol}}, y:{stacked:true,min:0,max:100,ticks:{color:w.tickCol},grid:{color:w.gridCol}}}})});
   const bins=Math.min(10,Math.max(2,finals.length)), min=0, max=100, width=(max-min)/bins;
   const counts=new Array(bins).fill(0);
   finals.forEach(v=>{const idx=Math.min(bins-1,Math.max(0,Math.floor((v-min)/width))); counts[idx]++;});
   const labels=counts.map((_,i)=>(Math.round(min+i*width))+'-'+(Math.round(min+(i+1)*width)));
-  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Distribution', data:counts}]}, options:commonOpts});
+  make('c5',{type:'bar', data:{labels:labels, datasets:[{label:'Count', data:counts,backgroundColor:w.barCol4}]}, options:opts({title:'Distribution (Histogram)'})});
 
   const reg=linReg(cies,sees); const xs=[Math.min.apply(null,cies.concat([0])), Math.max.apply(null,cies.concat([100]))]; const ys=xs.map(x=>reg.m*x+reg.b);
-  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map((x,i)=>({x:x,y:sees[i]}))},{label:'Regression', data: xs.map((x,i)=>({x:x,y:ys[i]})), type:'line'}]}, options:{...commonOpts,scales:{x:{title:{text:'CIE',display:true}}, y:{title:{text:'SEE',display:true}}}}});
+  make('c6',{type:'scatter', data:{datasets:[{label:'CIE vs SEE', data: cies.map((x,i)=>({x:x,y:sees[i]})), backgroundColor:w.barCol2}, {label:'Regression', data: xs.map((x,i)=>({x:x,y:ys[i]})), type:'line', borderColor:w.lineCol, borderWidth:2, pointRadius:0}]}, options:opts({title:'CIE vs SEE (with regression)',scales:{x:{title:{display:true,text:'CIE (0–50)'},ticks:{color:w.tickCol},grid:{color:w.gridCol}}, y:{title:{display:true,text:'SEE (0–100)'},ticks:{color:w.tickCol},grid:{color:w.gridCol}}}})});
   w.document.title=title+' — r='+pearson(cies,sees).toFixed(3);
 }
 
@@ -435,8 +457,7 @@ function planGoal(){
     txt.push('Uniform required GP across current subjects: '+needGP.toFixed(3)+(needGP>10?' (⚠ >10 impossible)':''));
     txt.push('');
     incSubs.forEach(s=>{
-      const reqFinal=Math.min(10,needGP)*G
-RADE_DIV; /* out of 100 */
+      const reqFinal=Math.min(10,needGP)*GRADE_DIV; /* out of 100 */
       const neededSEEraw=Math.max(0, reqFinal-cie(s))*SEE_DIV;
       const needSEE=neededSEEraw> s.see ? Math.min(100, neededSEEraw) : 0;
       txt.push(s.name+': current GP '+gradePoint(s).toFixed(3)+' → need final '+reqFinal.toFixed(2)+' ; SEE needed: '+needSEE.toFixed(2)+' ; Achievable: '+(needGP<=10));
