@@ -1,3 +1,9 @@
+if (typeof window !== "undefined") {
+  if (sessionStorage.getItem("isAuthenticated") !== "true") {
+    window.location.href = "/index.html"; // or your dashboard URL
+  }
+}
+
 "use client";
 import Spline from "@splinetool/react-spline";
 import { useState } from "react";
