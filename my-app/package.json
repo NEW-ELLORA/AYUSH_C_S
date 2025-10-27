@@ -1,6 +1,7 @@
 {
   "name": "company-3d-scene",
   "version": "1.0.0",
+  "homepage": "https://new-ellora.github.io/AYUSH_C_S",
   "private": true,
   "scripts": {
     "dev": "next dev",
